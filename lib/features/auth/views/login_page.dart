@@ -3,8 +3,11 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:grupus/features/auth/services/auth_services.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
+import 'package:grupus/shared/components/custom_outlined_btn.dart';
 import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
+import 'package:grupus/shared/components/index.dart';
+import 'package:grupus/shared/constants/app_constants.dart';
 import 'package:grupus/shared/utils/logs.dart';
 
 class LoginPage extends StatefulWidget {
@@ -35,20 +38,39 @@ class _LoginPageState extends State<LoginPage> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: LoginForm(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text("Grupus", style: Theme.of(context).textTheme.headlineMedium),
+              const Gap(8),
+              Text(
+                "Welcome!",
+                style: Theme.of(context).textTheme.headlineLarge,
+              ),
+              // const Gap(8),
+              // Text(
+              //   "Please login to your account",
+              //   style: Theme.of(context).textTheme.bodyMedium,
+              // ),
+              const Gap(32),
+              loginForm(),
+              alternativeLoginOptions(),
+            
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget LoginForm() {
+  Widget loginForm() {
     return Form(
       key: _formKey,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CustomTextfield(
-            labelText: 'username',
+            labelText: 'Username',
             controller: usernameController,
             validator:
                 (p0) =>
@@ -70,14 +92,35 @@ class _LoginPageState extends State<LoginPage> {
           const Gap(24),
           is_loading
               ? const CircularProgressIndicator()
-              : CustomFilledButton(btnLabel: "Verify", onTap: _submit),
+              : CustomFilledButton(btnLabel: "Login", onTap: _submit),
         ],
       ),
     );
   }
 
+  Widget alternativeLoginOptions() {
+    return Column(
+      children: [
+        const Gap(16),
+        Text("Or login with", style: Theme.of(context).textTheme.bodyMedium),
+        const Gap(16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: CustomOutlinedButton(btnLabel: "Google", onTap: () {}),
+            ),
+            const Gap(16),
+            Expanded(
+              child: CustomOutlinedButton(btnLabel: "Apple", onTap: () {}),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   void _submit() {
- 
     if (_formKey.currentState!.validate()) {
       setState(() {
         is_loading = true;

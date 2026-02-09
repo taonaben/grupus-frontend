@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:grupus/shared/constants/index.dart';
 
-class CustomFilledButton extends StatefulWidget {
+class CustomOutlinedButton extends StatefulWidget {
   final String btnLabel;
   final VoidCallback? onTap;
   final bool expand;
   final Color? backgroundColor;
   final Color? textColor;
 
-  const CustomFilledButton({
+  const CustomOutlinedButton({
     super.key,
     required this.btnLabel,
     this.onTap,
@@ -18,10 +18,10 @@ class CustomFilledButton extends StatefulWidget {
   });
 
   @override
-  State<CustomFilledButton> createState() => _CustomFilledButtonState();
+  State<CustomOutlinedButton> createState() => _CustomOutlinedButtonState();
 }
 
-class _CustomFilledButtonState extends State<CustomFilledButton>
+class _CustomOutlinedButtonState extends State<CustomOutlinedButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
@@ -75,9 +75,11 @@ class _CustomFilledButtonState extends State<CustomFilledButton>
               ),
               width: widget.expand ? double.infinity : null,
               decoration: BoxDecoration(
-                color:
-                    widget.backgroundColor ??
-                    Theme.of(context).colorScheme.primary,
+                color: widget.backgroundColor ?? Colors.transparent,
+                border: Border.all(
+                  color: widget.textColor ?? Theme.of(context).colorScheme.primary,
+                  width: 2,
+                ),
                 borderRadius: BorderRadius.circular(
                   AppConstants.borderRadiusMedium,
                 ),
@@ -97,7 +99,7 @@ class _CustomFilledButtonState extends State<CustomFilledButton>
               child: Text(
                 widget.btnLabel,
                 style: TextStyle(
-                  color: widget.textColor ?? Colors.white,
+                  color: widget.textColor ?? Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
