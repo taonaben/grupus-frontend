@@ -45,4 +45,7 @@ class AppConstants {
   static const String emptyStateMessage = 'No data available';
   static const String errorMessage = 'Something went wrong';
   static const String loadingMessage = 'Loading...';
+
+  //API Endpoints
+  static const String apiBaseUrl = 'http://localhost:8000';
 }

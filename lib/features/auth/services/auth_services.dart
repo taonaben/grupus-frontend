@@ -1,0 +1,67 @@
+import 'package:grupus/features/auth/api/auth_api.dart';
+import 'package:grupus/shared/utils/logs.dart';
+import 'package:grupus/shared/utils/shared_prefs.dart';
+
+class AuthServices {
+  var authApi = AuthApi();
+
+  Future<bool> login(String email, String password) async {
+    email = email.trim();
+    password = password.trim();
+
+    try {
+      final response = await authApi.login(email, password);
+
+      if (!response.success) {
+        return false;
+      }
+
+      final accessToken = response.data['access']?.toString();
+      final refreshToken = response.data['refresh']?.toString();
+      final userId = response.data['id']?.toString();
+
+      if (accessToken == null || refreshToken == null || userId == null) {
+        return false;
+      }
+
+      await saveSP("accessToken", accessToken);
+      await saveSP("refreshToken", refreshToken);
+      await saveSP("userId", userId);
+
+      return true;
+    } catch (e) {
+      DevLogs.logError("Error: $e");
+      return false;
+    }
+  }
+
+  Future<bool> isLoggedIn() async {
+    try {
+      final verifyAccess = await authApi.verifyToken();
+
+      // Access token is valid, user is logged in
+      if (verifyAccess.success) {
+        return true;
+      }
+
+      // Access token expired, try to refresh
+      final refreshTokenResponse = await authApi.refreshToken();
+
+      if (!refreshTokenResponse.success) {
+        return false;
+      }
+
+      final newAccessToken = refreshTokenResponse.data['access']?.toString();
+
+      if (newAccessToken == null) {
+        return false;
+      }
+
+      await saveSP("accessToken", newAccessToken);
+      return true;
+    } catch (e) {
+      DevLogs.logError("Error: $e");
+      return false;
+    }
+  }
+}
