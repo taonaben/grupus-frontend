@@ -11,7 +11,9 @@ void main() async {
   final authServices = AuthServices();
   final bool loggedIn = await authServices.isLoggedIn();
 
-  final router = createRouter(initialLocation: loggedIn ? '/home' : '/login');
+  final router = createRouter(
+    initialLocation: loggedIn ? '/workspaces' : '/login',
+  );
 
   runApp(ProviderScope(child: MyApp(router: router)));
 }
