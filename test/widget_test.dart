@@ -7,24 +7,31 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:grupus/main.dart';
+import 'package:grupus/core/navigation/routes.dart' show createRouter;
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Shows LoginPage when initial route is /login', (
+    WidgetTester tester,
+  ) async {
+    final router = createRouter(initialLocation: '/login');
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    await tester.pumpWidget(ProviderScope(child: MyApp(router: router)));
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.text('Login Page'), findsOneWidget);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('Shows Home when initial route is /home', (
+    WidgetTester tester,
+  ) async {
+    final router = createRouter(initialLocation: '/home');
+
+    await tester.pumpWidget(ProviderScope(child: MyApp(router: router)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome to the Home Page!'), findsOneWidget);
   });
 }

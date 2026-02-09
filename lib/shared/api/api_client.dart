@@ -1,0 +1,39 @@
+import 'package:dio/dio.dart';
+import 'package:grupus/shared/constants/app_constants.dart';
+import 'package:grupus/shared/utils/shared_prefs.dart';
+
+class ApiClient {
+  ApiClient._internal() {
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: AppConstants.apiBaseUrl,
+        connectTimeout: AppConstants.apiTimeout,
+        receiveTimeout: AppConstants.apiReadTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      ),
+    );
+
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          try {
+            final token = await getSP('accessToken');
+            if (token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+          } catch (_) {}
+          handler.next(options);
+        },
+      ),
+    );
+  }
+
+  static final ApiClient _instance = ApiClient._internal();
+  factory ApiClient() => _instance;
+
+  late final Dio _dio;
+  Dio get dio => _dio;
+}

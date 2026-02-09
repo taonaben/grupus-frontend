@@ -5,12 +5,12 @@ import 'package:grupus/shared/utils/shared_prefs.dart';
 class AuthServices {
   var authApi = AuthApi();
 
-  Future<bool> login(String email, String password) async {
-    email = email.trim();
+  Future<bool> login(String username, String password) async {
+    username = username.trim();
     password = password.trim();
 
     try {
-      final response = await authApi.login(email, password);
+      final response = await authApi.login(username, password);
 
       if (!response.success) {
         return false;
@@ -18,15 +18,37 @@ class AuthServices {
 
       final accessToken = response.data['access']?.toString();
       final refreshToken = response.data['refresh']?.toString();
-      final userId = response.data['id']?.toString();
+      final userId = response.data['user']["id"]?.toString();
 
-      if (accessToken == null || refreshToken == null || userId == null) {
+      DevLogs.logInfo("user id $userId");
+
+      if (accessToken == null || refreshToken == null) {
+        DevLogs.logError("Login failed: Missing tokens or user ID in response");
         return false;
       }
 
       await saveSP("accessToken", accessToken);
       await saveSP("refreshToken", refreshToken);
-      await saveSP("userId", userId);
+      // await saveSP("userId", userId);
+
+      return true;
+    } catch (e) {
+      DevLogs.logError("Error: $e");
+      return false;
+    }
+  }
+
+  Future<bool> logout() async {
+    try {
+      final response = await authApi.logout();
+
+      if (!response.success) {
+        DevLogs.logError("Logout failed: ${response.message}");
+        return false;
+      }
+
+      await removeSP("accessToken");
+      await removeSP("refreshToken");
 
       return true;
     } catch (e) {

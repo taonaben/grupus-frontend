@@ -46,6 +46,12 @@ Future<void> clearSP() async {
   DevLogs.logInfo("Shared Preferences cleared"); // Add logging
 }
 
+Future<void> removeSP(String key) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove(key);
+  DevLogs.logInfo("Removed key from SP: $key"); // Add logging
+}
+
 Future<void> saveStringListSP(String key, List<String> value) async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setStringList(key, value);

@@ -2,33 +2,26 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:grupus/shared/api/api_client.dart';
 import 'package:grupus/shared/utils/api_response.dart';
 import 'package:grupus/shared/utils/logs.dart';
 import 'package:grupus/shared/utils/shared_prefs.dart';
 import 'package:http/http.dart' as http;
-import 'package:grupus/shared/constants/app_constants.dart';
-
-final String baseUrl = AppConstants.apiBaseUrl;
+// baseUrl is provided by `ApiClient` now; removed redundant AppConstants import
 
 class AuthApi {
-  final Dio _dio = Dio(
-    BaseOptions(
-      baseUrl: baseUrl,
-      connectTimeout: AppConstants.apiTimeout,
-      receiveTimeout: AppConstants.apiReadTimeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    ),
-  );
+  final Dio _dio = ApiClient().dio;
 
   //!! LOGIN API CALL
-  Future<ApiResponse> login(String email, String password) async {
+  Future<ApiResponse> login(String username, String password) async {
     try {
       final response = await _dio.post(
-        '/auth/login/',
-        data: {'email': email, 'password': password},
+        '/users/login/',
+        data: {'username': username, 'password': password},
+      );
+
+      DevLogs.logInfo(
+        "Login status code ${response.statusCode}: ${response.statusMessage}",
       );
 
       if (response.statusCode == 200) {
@@ -38,6 +31,10 @@ class AuthApi {
           data: response.data,
         );
       } else {
+        DevLogs.logError(
+          "Login failed with status code ${response.statusCode}: ${response.statusMessage}",
+        );
+
         return ApiResponse(
           success: false,
           message: 'Login failed: ${response.statusMessage}',
@@ -119,7 +116,11 @@ class AuthApi {
     final String refreshToken = await getSP("refreshToken");
 
     if (refreshToken.isEmpty) {
-      return ApiResponse(success: false, message: 'No refresh token found', data: {});
+      return ApiResponse(
+        success: false,
+        message: 'No refresh token found',
+        data: {},
+      );
     }
 
     try {
@@ -161,6 +162,37 @@ class AuthApi {
       return ApiResponse(
         success: false,
         message: 'An unexpected error occurred: $e',
+        data: {},
+      );
+    }
+  }
+
+  Future<ApiResponse> logout() async {
+    try {
+      final refreshToken = await getSP("refreshToken");
+
+      final response = await _dio.post(
+        '/auth/logout/',
+        data: {'refresh': refreshToken},
+      );
+      if (response.statusCode == 200) {
+        return ApiResponse(
+          message: "Logout Successful",
+          success: true,
+          data: response.data,
+        );
+      } else {
+        return ApiResponse(
+          success: false,
+          message: 'Logout failed: ${response.statusMessage}',
+          data: response.data,
+        );
+      }
+    } catch (e) {
+      DevLogs.logError("Logout failed: $e");
+      return ApiResponse(
+        success: false,
+        message: 'Logout failed: $e',
         data: {},
       );
     }
