@@ -1,9 +1,9 @@
-import 'package:grupus/features/auth/api/auth_api.dart';
+import 'package:grupus/features/auth/api/login_api.dart';
 import 'package:grupus/shared/utils/logs.dart';
 import 'package:grupus/shared/utils/shared_prefs.dart';
 
 class AuthServices {
-  var authApi = AuthApi();
+  var authApi = LoginApi();
 
   Future<bool> login(String username, String password) async {
     username = username.trim();

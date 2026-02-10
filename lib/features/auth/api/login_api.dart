@@ -9,7 +9,7 @@ import 'package:grupus/shared/utils/shared_prefs.dart';
 import 'package:http/http.dart' as http;
 // baseUrl is provided by `ApiClient` now; removed redundant AppConstants import
 
-class AuthApi {
+class LoginApi {
   final Dio _dio = ApiClient().dio;
 
   //!! LOGIN API CALL
