@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
+import 'package:grupus/shared/components/custom_textfield.dart';
 import 'package:grupus/shared/constants/index.dart';
 
 class UsernameScreen extends StatefulWidget {
@@ -14,14 +16,10 @@ class UsernameScreen extends StatefulWidget {
 class _UsernameScreenState extends State<UsernameScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController firstNameController = TextEditingController();
-  final TextEditingController lastNameController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
 
   @override
   void dispose() {
-    firstNameController.dispose();
-    lastNameController.dispose();
     usernameController.dispose();
     super.dispose();
   }
@@ -68,55 +66,28 @@ class _UsernameScreenState extends State<UsernameScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Row(
-            //   children: [
-            //     Expanded(
-            //       child: TextFormField(
-            //         controller: firstNameController,
-            //         decoration: const InputDecoration(labelText: "First Name"),
-            //         validator: (value) {
-            //           if (value == null || value.isEmpty) {
-            //             return 'Please enter your first name';
-            //           }
-            //           return null;
-            //         },
-            //       ),
-            //     ),
-            //     const Gap(AppConstants.gapMedium),
-
-            //     Expanded(
-            //       child: TextFormField(
-            //         controller: lastNameController,
-            //         decoration: const InputDecoration(labelText: "Last Name"),
-            //         validator: (value) {
-            //           if (value == null || value.isEmpty) {
-            //             return 'Please enter your last name';
-            //           }
-            //           return null;
-            //         },
-            //       ),
-            //     ),
-            //   ],
-            // ),
-            // const Gap(AppConstants.gapMedium),
             Text(
               "Pick a username for your new account. You can always change it later.",
               style: Theme.of(context).textTheme.bodySmall,
               textAlign: TextAlign.center,
             ),
             const Gap(AppConstants.gapMedium),
-            TextFormField(
+            CustomTextfield(
               controller: usernameController,
-              decoration: const InputDecoration(labelText: "Username"),
+              labelText: "Username",
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter your username';
                 }
                 return null;
               },
+              suffixIcon: const Icon(
+                CupertinoIcons.check_mark_circled_solid,
+                color: Colors.green,
+              ),
             ),
             const Gap(AppConstants.gapLarge),
-            CustomFilledButton(btnLabel: "Continue", onTap: () {}),
+            CustomFilledButton(btnLabel: "Continue", onTap: _submit),
           ],
         ),
       ),
@@ -124,6 +95,8 @@ class _UsernameScreenState extends State<UsernameScreen> {
   }
 
   void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {}
+    if (_formKey.currentState?.validate() ?? false) {
+      context.pushNamed("create-profile");
+    }
   }
 }

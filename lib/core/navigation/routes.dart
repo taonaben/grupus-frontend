@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:grupus/features/auth/views/login_page.dart';
 import 'package:grupus/core/navigation/home.dart';
+import 'package:grupus/features/auth/views/registration/profile_create_screen.dart';
 import 'package:grupus/features/auth/views/registration/username_screen.dart';
 import 'package:grupus/features/auth/views/registration/registration_page.dart';
 import 'package:grupus/features/auth/views/registration/verify_email_screen.dart';
@@ -64,9 +65,14 @@ GoRouter createRouter({required String initialLocation}) {
         },
       ),
       GoRoute(
-        path: '/register/identity',
-        name: "register-identity",
+        path: '/register/username',
+        name: "create-username",
         builder: (context, state) => const UsernameScreen(),
+      ),
+      GoRoute(
+        path: '/register/create-profile',
+        name: "create-profile",
+        builder: (context, state) => const ProfileCreateScreen(),
       ),
 
       StatefulShellRoute.indexedStack(

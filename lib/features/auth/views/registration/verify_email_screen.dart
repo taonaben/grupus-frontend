@@ -35,7 +35,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium,),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.paddingMedium,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -146,6 +148,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
       return;
     }
 
-    context.pushNamed("register-identity");
+    context.pushNamed("create-username");
   }
 }
