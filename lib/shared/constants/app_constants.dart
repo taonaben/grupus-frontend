@@ -22,6 +22,13 @@ class AppConstants {
   static const double borderRadiusLarge = 12;
   static const double borderRadiusXLarge = 20;
 
+  // Gap Sizes
+  static const double gapXSmall = 4;
+  static const double gapSmall = 8;
+  static const double gapMedium = 16;
+  static const double gapLarge = 24;
+  static const double gapXLarge = 32;
+
   // Icon Sizes
   static const double iconSizeSmall = 16;
   static const double iconSizeMedium = 24;

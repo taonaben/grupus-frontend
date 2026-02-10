@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +56,27 @@ class _LoginPageState extends State<LoginPage> {
               const Gap(32),
               loginForm(),
               alternativeLoginOptions(),
-            
+              const Gap(32),
+
+              RichText(
+                text: TextSpan(
+                  text: "Don't have an account? ",
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  children: [
+                    TextSpan(
+                      text: "Register",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      recognizer:
+                          TapGestureRecognizer()
+                            ..onTap = () {
+                              context.go("/register");
+                            },
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

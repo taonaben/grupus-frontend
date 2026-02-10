@@ -61,7 +61,7 @@ dependencies:
   video_player: ^2.10.0
   flutter_rating_stars: ^1.1.0
   exif: ^3.3.0
- 
+  
   masonry_grid: ^1.0.0
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
@@ -73,6 +73,8 @@ dependencies:
   flutter_custom_carousel: ^0.1.0+1
   provider: ^6.1.5+1
   fluentui_system_icons: ^1.1.273
+  otp_input: ^1.0.3
+  flutter_otp_text_field: ^1.5.1+1
   # connectivity_plus: ^7.0.0
   
 

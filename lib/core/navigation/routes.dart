@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:grupus/features/auth/views/login_page.dart';
 import 'package:grupus/core/navigation/home.dart';
+import 'package:grupus/features/auth/views/registration/username_screen.dart';
+import 'package:grupus/features/auth/views/registration/registration_page.dart';
+import 'package:grupus/features/auth/views/registration/verify_email_screen.dart';
 import 'package:grupus/features/groups/views/groups_page.dart';
 import 'package:grupus/features/resources/views/resources_page.dart';
 import 'package:grupus/features/workspaces/workspaces.dart';
@@ -47,7 +50,25 @@ GoRouter createRouter({required String initialLocation}) {
         name: "login",
         builder: (context, state) => const LoginPage(),
       ),
-      // Tab-based navigation shell
+      GoRoute(
+        path: '/register',
+        name: "register",
+        builder: (context, state) => const RegistrationPage(),
+      ),
+      GoRoute(
+        path: "/verify-email",
+        name: "verify-email",
+        builder: (context, state) {
+          final String email = state.extra as String? ?? '';
+          return VerifyEmailScreen(email: email);
+        },
+      ),
+      GoRoute(
+        path: '/register/identity',
+        name: "register-identity",
+        builder: (context, state) => const UsernameScreen(),
+      ),
+
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return Home(navigationShell: navigationShell);
