@@ -1,28 +1,38 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:grupus/features/auth/services/register_services.dart';
+import 'package:grupus/features/auth/state/registration_provider.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
+import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
+import 'package:grupus/shared/utils/logs.dart';
 
-class ProfileCreateScreen extends StatefulWidget {
+class ProfileCreateScreen extends ConsumerStatefulWidget {
   const ProfileCreateScreen({super.key});
 
   @override
-  State<ProfileCreateScreen> createState() => _ProfileCreateScreenState();
+  ConsumerState<ProfileCreateScreen> createState() =>
+      _ProfileCreateScreenState();
 }
 
-class _ProfileCreateScreenState extends State<ProfileCreateScreen> {
+class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController bioController = TextEditingController();
+  String profilePictureUrl =
+      ""; // This will hold the URL of the uploaded profile picture
 
   @override
   void dispose() {
     firstNameController.dispose();
     lastNameController.dispose();
+    bioController.dispose();
     super.dispose();
   }
 
@@ -38,8 +48,20 @@ class _ProfileCreateScreenState extends State<ProfileCreateScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              context.pushNamed("workspaces");
+            onPressed: () async {
+              try {
+                bool register = await _register();
+
+                if (register) {
+                  context.pushNamed("workspaces");
+                }
+              } catch (e) {
+                CustomSnackbar(
+                  message: "An error occurred $e",
+                  color: Theme.of(context).colorScheme.error,
+                ).showSnackBar(context);
+                DevLogs.logError("Error during profile creation: $e");
+              }
             },
             child: const Text("Skip"),
           ),
@@ -130,9 +152,57 @@ class _ProfileCreateScreenState extends State<ProfileCreateScreen> {
     );
   }
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      context.pushNamed("workspaces");
+      try {
+        ref
+            .read(registrationProvider.notifier)
+            .updatePersonalInfo(
+              bio: bioController.text.trim(),
+              firstName: firstNameController.text.trim(),
+              lastName: lastNameController.text.trim(),
+              profilePicture: profilePictureUrl.trim(),
+              notificationSettings: "",
+              preferredLanguage: "en",
+            );
+
+        bool register = await _register();
+
+        if (register) {
+          context.pushNamed("workspaces");
+        }
+      } catch (e) {
+        CustomSnackbar(
+          message: "An error occurred $e",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        DevLogs.logError("Error during profile creation: $e");
+      }
     }
+  }
+
+  Future<bool> _register() async {
+    try {
+      final registrationData = ref.read(registrationProvider);
+      var registerService = RegisterServices();
+
+      bool response = await registerService.registerUser(registrationData);
+
+      if (!response) {
+        CustomSnackbar(
+          message: "Registration failed. Please try again.",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      CustomSnackbar(
+        message: "An error occurred during registration: $e",
+        color: Theme.of(context).colorScheme.error,
+      ).showSnackBar(context);
+      DevLogs.logError("Error during registration: $e");
+    }
+    return false;
   }
 }

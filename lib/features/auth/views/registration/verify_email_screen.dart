@@ -2,23 +2,27 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:grupus/features/auth/services/otp_services.dart';
+import 'package:grupus/features/auth/state/registration_provider.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
 import 'package:flutter_otp_text_field/flutter_otp_text_field.dart';
+import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
 import 'package:grupus/shared/utils/logs.dart';
 
-class VerifyEmailScreen extends StatefulWidget {
+class VerifyEmailScreen extends ConsumerStatefulWidget {
   final String email;
 
   const VerifyEmailScreen({super.key, required this.email});
 
   @override
-  State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
+  ConsumerState<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
+class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
   String enteredOTP = '';
   bool isLoading = false;
 
@@ -140,14 +144,41 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     );
   }
 
-  void _submit() {
+  void _submit() async {
     if (enteredOTP.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter the complete OTP")),
-      );
+      CustomSnackbar(
+        message: "Enter a valid OTP",
+        color: Theme.of(context).colorScheme.error,
+      ).showSnackBar(context);
       return;
     }
 
-    context.pushNamed("create-username");
+    try {
+      String email = ref.read(registrationProvider).email;
+
+      //Verify OTP first
+      var otpService = OtpServices();
+      bool response = await otpService.verifyOTP(email, int.parse(enteredOTP));
+
+      if (!response) {
+        CustomSnackbar(
+          message: "Invalid OTP. Please try again.",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return;
+      }
+
+      ref.read(registrationProvider.notifier)
+        ..updateOTP(int.parse(enteredOTP))
+        ..nextStep();
+
+      context.pushNamed("create-username");
+    } catch (e) {
+      CustomSnackbar(
+        message: "An error occurred $e",
+        color: Theme.of(context).colorScheme.error,
+      ).showSnackBar(context);
+      DevLogs.logError("Error during OTP submission: $e");
+    }
   }
 }

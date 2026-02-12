@@ -1,19 +1,23 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:grupus/features/auth/services/otp_services.dart';
+import 'package:grupus/features/auth/state/registration_provider.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
+import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
 
-class RegistrationPage extends StatefulWidget {
+class RegistrationPage extends ConsumerStatefulWidget {
   const RegistrationPage({super.key});
 
   @override
-  State<RegistrationPage> createState() => _RegistrationPageState();
+  ConsumerState<RegistrationPage> createState() => _RegistrationPageState();
 }
 
-class _RegistrationPageState extends State<RegistrationPage> {
+class _RegistrationPageState extends ConsumerState<RegistrationPage> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController emailController = TextEditingController();
@@ -120,16 +124,43 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState!.validate()) {
       if (passwordController.text != confirmPasswordController.text) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+        CustomSnackbar(
+          message: "Passwords do not match",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
         return;
       }
 
-      context.pushNamed("verify-email", extra: emailController.text.trim());
+      try {
+        var otpService = OtpServices();
+
+        bool otpSent = await otpService.requestOTP(emailController.text.trim());
+
+        if (!otpSent) {
+          CustomSnackbar(
+            message: "Failed to send OTP",
+            color: Theme.of(context).colorScheme.error,
+          ).showSnackBar(context);
+          return;
+        }
+
+        ref.read(registrationProvider.notifier)
+          ..updateEmail(emailController.text.trim())
+          ..updatePassword(confirmPasswordController.text.trim())
+          ..nextStep();
+
+        context.pushNamed("verify-email", extra: emailController.text.trim());
+        
+      } catch (e) {
+        CustomSnackbar(
+          message: "An error occurred: $e",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return;
+      }
     }
   }
 }

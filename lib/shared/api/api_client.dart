@@ -29,6 +29,10 @@ class ApiClient {
         },
       ),
     );
+
+    _dio.interceptors.add(
+      LogInterceptor(requestBody: true, responseBody: true, error: true),
+    );
   }
 
   static final ApiClient _instance = ApiClient._internal();

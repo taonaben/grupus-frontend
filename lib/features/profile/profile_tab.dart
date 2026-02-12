@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:grupus/features/auth/services/auth_services.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
 import 'package:grupus/shared/utils/logs.dart';
+import 'package:grupus/shared/utils/shared_prefs.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
@@ -33,9 +34,9 @@ class ProfileTab extends StatelessWidget {
             ),
             CustomFilledButton(
               btnLabel: "Logout",
-              onTap: () {
+              onTap: () async {
                 var authServices = AuthServices();
-                authServices
+                await authServices
                     .logout()
                     .then((success) {
                       if (success) {

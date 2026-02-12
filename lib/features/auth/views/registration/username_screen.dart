@@ -1,19 +1,23 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:grupus/features/auth/state/registration_provider.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
+import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
 import 'package:grupus/shared/constants/index.dart';
+import 'package:grupus/shared/utils/logs.dart';
 
-class UsernameScreen extends StatefulWidget {
+class UsernameScreen extends ConsumerStatefulWidget {
   const UsernameScreen({super.key});
 
   @override
-  State<UsernameScreen> createState() => _UsernameScreenState();
+  ConsumerState<UsernameScreen> createState() => _UsernameScreenState();
 }
 
-class _UsernameScreenState extends State<UsernameScreen> {
+class _UsernameScreenState extends ConsumerState<UsernameScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController usernameController = TextEditingController();
@@ -96,7 +100,19 @@ class _UsernameScreenState extends State<UsernameScreen> {
 
   void _submit() {
     if (_formKey.currentState?.validate() ?? false) {
-      context.pushNamed("create-profile");
+      try {
+        ref.read(registrationProvider.notifier)
+          ..updateUsername(usernameController.text.trim())
+          ..nextStep();
+
+        context.pushNamed("create-profile");
+      } catch (e) {
+        CustomSnackbar(
+          message: "An error occurred $e",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        DevLogs.logError("Error during username submission: $e");
+      }
     }
   }
 }

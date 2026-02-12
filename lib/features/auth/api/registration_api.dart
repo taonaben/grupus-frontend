@@ -40,7 +40,7 @@ class RegistrationApi {
       if (e.response != null) {
         return ApiResponse(
           success: false,
-          message: e.response?.data['message'] ?? 'Failed to send OTP',
+          message: e.response?.data['detail'] ?? 'Failed to send OTP',
           data: {},
         );
       } else {
@@ -57,11 +57,11 @@ class RegistrationApi {
   }
 
   //!! VERIFY OTP API CALL
-  Future<ApiResponse> verifyOtp(String email, String token) async {
+  Future<ApiResponse> verifyOtp(String email, int otp) async {
     try {
       final response = await _dio.post(
         '/auth/verify-otp/',
-        data: {'email': email, 'token': token},
+        data: {'email': email, 'token': otp},
       );
 
       DevLogs.logInfo(
@@ -70,7 +70,7 @@ class RegistrationApi {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ApiResponse(
-          message: response.data['message'] ?? "OTP verified successfully",
+          message: response.data['detail'] ?? "OTP verified successfully",
           success: true,
           data: response.data,
         );
@@ -81,7 +81,7 @@ class RegistrationApi {
 
         return ApiResponse(
           success: false,
-          message: response.data['message'] ?? 'Invalid OTP',
+          message: response.data['detail'] ?? 'Invalid OTP',
           data: {},
         );
       }
@@ -89,7 +89,7 @@ class RegistrationApi {
       if (e.response != null) {
         return ApiResponse(
           success: false,
-          message: e.response?.data['message'] ?? 'Invalid OTP',
+          message: e.response?.data['detail'] ?? 'Invalid OTP',
           data: {},
         );
       } else {
