@@ -43,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text("Grupus", style: Theme.of(context).textTheme.headlineMedium),
-              const Gap(8),
+              const Gap(AppConstants.gapSmall),
               Text(
                 "Welcome!",
                 style: Theme.of(context).textTheme.headlineLarge,
@@ -53,10 +53,10 @@ class _LoginPageState extends State<LoginPage> {
               //   "Please login to your account",
               //   style: Theme.of(context).textTheme.bodyMedium,
               // ),
-              const Gap(32),
+              const Gap(AppConstants.gapXLarge  ),
               loginForm(),
               alternativeLoginOptions(),
-              const Gap(32),
+              const Gap(AppConstants.gapXLarge),
 
               RichText(
                 text: TextSpan(
@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                         ? "Username cannot be empty"
                         : null,
           ),
-          const Gap(16),
+          const Gap(AppConstants.gapMedium),
           CustomTextfield(
             labelText: 'Password',
             obscureText: true,
@@ -110,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                         ? "Password cannot be empty"
                         : null,
           ),
-          const Gap(24),
+          const Gap(AppConstants.gapLarge),
           is_loading
               ? const CircularProgressIndicator()
               : CustomFilledButton(btnLabel: "Login", onTap: _submit),
@@ -122,16 +122,16 @@ class _LoginPageState extends State<LoginPage> {
   Widget alternativeLoginOptions() {
     return Column(
       children: [
-        const Gap(16),
+        const Gap(AppConstants.gapMedium),
         Text("Or login with", style: Theme.of(context).textTheme.bodyMedium),
-        const Gap(16),
+        const Gap(AppConstants.gapMedium),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
               child: CustomOutlinedButton(btnLabel: "Google", onTap: () {}),
             ),
-            const Gap(16),
+            const Gap(AppConstants.gapMedium),
             Expanded(
               child: CustomOutlinedButton(btnLabel: "Apple", onTap: () {}),
             ),

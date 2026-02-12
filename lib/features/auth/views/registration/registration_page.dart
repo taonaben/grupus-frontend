@@ -1,8 +1,10 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
+import 'package:grupus/shared/constants/app_constants.dart';
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({super.key});
@@ -38,11 +40,32 @@ class _RegistrationPageState extends State<RegistrationPage> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text("Grupus", style: Theme.of(context).textTheme.headlineMedium),
-            const Gap(8),
+            const Gap(AppConstants.gapSmall),
             Text("Welcome!", style: Theme.of(context).textTheme.headlineLarge),
 
-            const Gap(32),
+            const Gap(AppConstants.gapXLarge),
             registrationForm(),
+            const Gap(AppConstants.gapXLarge),
+
+            RichText(
+              text: TextSpan(
+                text: "Already have an account? ",
+                style: Theme.of(context).textTheme.bodyMedium,
+                children: [
+                  TextSpan(
+                    text: "Login",
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    recognizer:
+                        TapGestureRecognizer()
+                          ..onTap = () {
+                            context.go("/login");
+                          },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -65,7 +88,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   (p0) =>
                       p0 == null || p0.isEmpty ? "Email cannot be empty" : null,
             ),
-            const Gap(16),
+            const Gap(AppConstants.gapMedium),
             CustomTextfield(
               labelText: 'Password',
               obscureText: true,
@@ -76,7 +99,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           ? "Password cannot be empty"
                           : null,
             ),
-            const Gap(16),
+            const Gap(AppConstants.gapMedium),
             CustomTextfield(
               labelText: 'Confirm Password',
               obscureText: true,
@@ -87,7 +110,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                           ? "Confirm Password cannot be empty"
                           : null,
             ),
-            const Gap(24),
+            const Gap(AppConstants.gapLarge),
             is_loading
                 ? const CircularProgressIndicator()
                 : CustomFilledButton(btnLabel: "Register", onTap: _submit),
