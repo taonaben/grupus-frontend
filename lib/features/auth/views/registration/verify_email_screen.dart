@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -88,21 +89,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
               ),
               const Gap(AppConstants.gapMedium),
 
-              RichText(
-                text: TextSpan(
-                  text: "Didn't receive the OTP? ",
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  children: [
-                    TextSpan(
-                      text: "Resend",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      recognizer: TapGestureRecognizer()..onTap = () {},
-                    ),
-                  ],
-                ),
-              ),
+              // ChoiceChip(label: , selected: selected)
 
               const Gap(AppConstants.gapXLarge),
               isLoading
@@ -153,6 +140,10 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       return;
     }
 
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       String email = ref.read(registrationProvider).email;
 
@@ -165,19 +156,52 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
           message: "Invalid OTP. Please try again.",
           color: Theme.of(context).colorScheme.error,
         ).showSnackBar(context);
+        setState(() {
+          isLoading = false;
+        });
         return;
       }
 
       ref.read(registrationProvider.notifier)
         ..updateOTP(int.parse(enteredOTP))
         ..nextStep();
- context.pushNamed("create-profile");
+
+      setState(() {
+        isLoading = false;
+      });
+      context.pushNamed("create-profile");
     } catch (e) {
-      CustomSnackbar(
-        message: "An error occurred $e",
-        color: Theme.of(context).colorScheme.error,
-      ).showSnackBar(context);
       DevLogs.logError("Error during OTP submission: $e");
+      setState(() {
+        isLoading = false;
+      });
+      if (e is FormatException) {
+        CustomSnackbar(
+          message: "Invalid OTP format. Please enter a 6-digit number.",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return;
+      } else if (e is DioException && e.response != null) {
+        CustomSnackbar(
+          message: e.response?.data['detail'] ?? 'Invalid OTP',
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return;
+      } else if (e is DioException) {
+        DevLogs.logError("Network error: ${e.message}");
+        CustomSnackbar(
+          message: 'Network error: ${e.message}',
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return;
+      } else {
+        CustomSnackbar(
+          message: "An unexpected error occurred: $e",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        DevLogs.logError("An unexpected error occurred: $e");
+        return;
+      }
     }
   }
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:grupus/features/auth/services/otp_services.dart';
 import 'package:grupus/features/auth/state/registration_provider.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
+import 'package:grupus/shared/components/custom_progress_indicator.dart';
 import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
@@ -116,7 +117,7 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
             ),
             const Gap(AppConstants.gapLarge),
             is_loading
-                ? const CircularProgressIndicator()
+                ? const CustomProgressIndicator()
                 : CustomFilledButton(btnLabel: "Register", onTap: _submit),
           ],
         ),
@@ -134,6 +135,10 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
         return;
       }
 
+      setState(() {
+        is_loading = true;
+      });
+
       try {
         var otpService = OtpServices();
 
@@ -144,6 +149,9 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
             message: "Failed to send OTP",
             color: Theme.of(context).colorScheme.error,
           ).showSnackBar(context);
+          setState(() {
+            is_loading = false;
+          });
           return;
         }
 
@@ -152,13 +160,19 @@ class _RegistrationPageState extends ConsumerState<RegistrationPage> {
           ..updatePassword(confirmPasswordController.text.trim())
           ..nextStep();
 
+        setState(() {
+          is_loading = false;
+        });
+
         context.pushNamed("verify-email", extra: emailController.text.trim());
-        
       } catch (e) {
         CustomSnackbar(
           message: "An error occurred: $e",
           color: Theme.of(context).colorScheme.error,
         ).showSnackBar(context);
+        setState(() {
+          is_loading = false;
+        });
         return;
       }
     }

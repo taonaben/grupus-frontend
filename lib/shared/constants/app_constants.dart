@@ -44,6 +44,13 @@ class AppConstants {
   static const double fontSizeXXLarge = 24;
   static const double fontSizeTitle = 32;
 
+  // Progress Indicator Size
+  static const double progressIndicatorSizeSmall = 16;
+  static const double progressIndicatorSizeMedium = 24;
+  static const double progressIndicatorSizeLarge = 32;
+  static const double progressIndicatorSizeXLarge = 48;
+  
+
   // API Timeouts
   static const Duration apiTimeout = Duration(seconds: 30);
   static const Duration apiReadTimeout = Duration(seconds: 30);

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:grupus/features/auth/services/auth_services.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
 import 'package:grupus/shared/components/custom_outlined_btn.dart';
+import 'package:grupus/shared/components/custom_progress_indicator.dart';
 import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
 import 'package:grupus/shared/components/index.dart';
@@ -112,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const Gap(AppConstants.gapLarge),
           is_loading
-              ? const CircularProgressIndicator()
+              ? const CustomProgressIndicator()
               : CustomFilledButton(btnLabel: "Login", onTap: _submit),
         ],
       ),
