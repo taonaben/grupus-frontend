@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
+import 'package:grupus/features/auth/services/register_services.dart';
 import 'package:grupus/features/auth/state/registration_provider.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
 import 'package:grupus/shared/components/custom_snackbar.dart';
@@ -98,14 +99,18 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
     );
   }
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
         ref.read(registrationProvider.notifier)
           ..updateUsername(usernameController.text.trim())
           ..nextStep();
 
-        context.pushNamed("create-profile");
+        bool register = await _register();
+
+        if (register) {
+          context.pushNamed("workspaces");
+        }
       } catch (e) {
         CustomSnackbar(
           message: "An error occurred $e",
@@ -114,5 +119,30 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
         DevLogs.logError("Error during username submission: $e");
       }
     }
+  }
+
+  Future<bool> _register() async {
+    try {
+      final registrationData = ref.read(registrationProvider);
+      var registerService = RegisterServices();
+
+      bool response = await registerService.registerUser(registrationData);
+
+      if (!response) {
+        CustomSnackbar(
+          message: "Registration failed. Please try again.",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      CustomSnackbar(
+        message: "An error occurred during registration: $e",
+        color: Theme.of(context).colorScheme.error,
+      ).showSnackBar(context);
+      DevLogs.logError("Error during registration: $e");
+    }
+    return false;
   }
 }

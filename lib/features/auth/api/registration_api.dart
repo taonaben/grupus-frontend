@@ -58,14 +58,14 @@ class RegistrationApi {
 
   //!! VERIFY OTP API CALL
   Future<ApiResponse> verifyOtp(String email, int otp) async {
+    DevLogs.logInfo("Verifying OTP for email: $email with OTP: $otp");
     try {
       final response = await _dio.post(
         '/auth/verify-otp/',
-        data: {'email': email, 'token': otp},
+        data: {'email': email, 'token': otp.toString()},
       );
-
       DevLogs.logInfo(
-        "Verify OTP status code ${response.statusCode}: ${response.statusMessage}",
+        "Received response for OTP verification: ${response.data}",
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {

@@ -171,8 +171,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
       ref.read(registrationProvider.notifier)
         ..updateOTP(int.parse(enteredOTP))
         ..nextStep();
-
-      context.pushNamed("create-username");
+ context.pushNamed("create-profile");
     } catch (e) {
       CustomSnackbar(
         message: "An error occurred $e",

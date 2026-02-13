@@ -46,26 +46,26 @@ class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
           icon: const Icon(CupertinoIcons.chevron_left),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              try {
-                bool register = await _register();
+        // actions: [
+        //   TextButton(
+        //     onPressed: () async {
+        //       try {
+        //         bool register = await _register();
 
-                if (register) {
-                  context.pushNamed("workspaces");
-                }
-              } catch (e) {
-                CustomSnackbar(
-                  message: "An error occurred $e",
-                  color: Theme.of(context).colorScheme.error,
-                ).showSnackBar(context);
-                DevLogs.logError("Error during profile creation: $e");
-              }
-            },
-            child: const Text("Skip"),
-          ),
-        ],
+        //         if (register) {
+        //           context.pushNamed("workspaces");
+        //         }
+        //       } catch (e) {
+        //         CustomSnackbar(
+        //           message: "An error occurred $e",
+        //           color: Theme.of(context).colorScheme.error,
+        //         ).showSnackBar(context);
+        //         DevLogs.logError("Error during profile creation: $e");
+        //       }
+        //     },
+        //     child: const Text("Skip"),
+        //   ),
+        // ],
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -82,7 +82,7 @@ class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
               ),
               const Gap(AppConstants.gapMedium),
               Text(
-                "Create your profile by providing your first and last name. You can always do this later.",
+                "Create your profile by providing your first and last name. You can always edit this later.",
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
@@ -97,63 +97,66 @@ class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
   }
 
   Widget profileForm() {
-    return Column(
-      children: [
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: Theme.of(context).dividerColor,
-          child: const Icon(
-            CupertinoIcons.person,
-            size: 50,
-            color: Colors.white,
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 50,
+            backgroundColor: Theme.of(context).dividerColor,
+            child: const Icon(
+              CupertinoIcons.person,
+              size: 50,
+              color: Colors.white,
+            ),
           ),
-        ),
-        const Gap(AppConstants.gapMedium),
-        Row(
-          children: [
-            Expanded(
-              child: CustomTextfield(
-                controller: firstNameController,
-                labelText: "First Name",
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your first name';
-                  }
-                  return null;
-                },
+          const Gap(AppConstants.gapMedium),
+          Row(
+            children: [
+              Expanded(
+                child: CustomTextfield(
+                  controller: firstNameController,
+                  labelText: "First Name",
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your first name';
+                    }
+                    return null;
+                  },
+                ),
               ),
-            ),
-            const Gap(AppConstants.gapMedium),
+              const Gap(AppConstants.gapMedium),
 
-            Expanded(
-              child: CustomTextfield(
-                controller: lastNameController,
-                labelText: "Last Name",
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your last name';
-                  }
-                  return null;
-                },
+              Expanded(
+                child: CustomTextfield(
+                  controller: lastNameController,
+                  labelText: "Last Name",
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your last name';
+                    }
+                    return null;
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-        const Gap(AppConstants.gapMedium),
-        CustomTextfield(
-          labelText: "Bio",
-          hintText: "Tell us about yourself",
-          maxLines: 2,
-          maxLength: 100,
-          controller: bioController,
-        ),
-        const Gap(AppConstants.gapMedium),
-        CustomFilledButton(btnLabel: "Continue", onTap: _submit),
-      ],
+            ],
+          ),
+          const Gap(AppConstants.gapMedium),
+          CustomTextfield(
+            labelText: "Bio",
+            hintText: "Tell us about yourself",
+            maxLines: 2,
+            maxLength: 100,
+            controller: bioController,
+          ),
+          const Gap(AppConstants.gapMedium),
+          CustomFilledButton(btnLabel: "Continue", onTap: _submit),
+        ],
+      ),
     );
   }
 
-  void _submit() async {
+  void _submit() {
     try {
       ref
           .read(registrationProvider.notifier)
@@ -166,11 +169,7 @@ class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
             preferredLanguage: "en",
           );
 
-      bool register = await _register();
-
-      if (register) {
-        context.pushNamed("workspaces");
-      }
+      context.pushNamed("create-username");
     } catch (e) {
       CustomSnackbar(
         message: "An error occurred $e",
@@ -178,30 +177,5 @@ class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
       ).showSnackBar(context);
       DevLogs.logError("Error during profile creation: $e");
     }
-  }
-
-  Future<bool> _register() async {
-    try {
-      final registrationData = ref.read(registrationProvider);
-      var registerService = RegisterServices();
-
-      bool response = await registerService.registerUser(registrationData);
-
-      if (!response) {
-        CustomSnackbar(
-          message: "Registration failed. Please try again.",
-          color: Theme.of(context).colorScheme.error,
-        ).showSnackBar(context);
-        return false;
-      }
-      return true;
-    } catch (e) {
-      CustomSnackbar(
-        message: "An error occurred during registration: $e",
-        color: Theme.of(context).colorScheme.error,
-      ).showSnackBar(context);
-      DevLogs.logError("Error during registration: $e");
-    }
-    return false;
   }
 }
