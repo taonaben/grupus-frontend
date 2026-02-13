@@ -170,8 +170,7 @@ class LoginApi {
   Future<ApiResponse> logout() async {
     try {
       final refreshToken = await getSP("refreshToken");
-      DevLogs.logInfo("Attempting logout with refresh token: $refreshToken");
-
+  
       if (refreshToken.isEmpty) {
         return ApiResponse(
           success: false,
@@ -180,10 +179,12 @@ class LoginApi {
         );
       }
 
+
       final response = await _dio.post(
         '/auth/logout/',
         data: {"refresh": refreshToken},
       );
+     
       if (response.statusCode == 200) {
         return ApiResponse(
           message: "Logout Successful",

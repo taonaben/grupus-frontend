@@ -145,6 +145,7 @@ class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
           hintText: "Tell us about yourself",
           maxLines: 2,
           maxLength: 100,
+          controller: bioController,
         ),
         const Gap(AppConstants.gapMedium),
         CustomFilledButton(btnLabel: "Continue", onTap: _submit),
@@ -153,31 +154,29 @@ class _ProfileCreateScreenState extends ConsumerState<ProfileCreateScreen> {
   }
 
   void _submit() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      try {
-        ref
-            .read(registrationProvider.notifier)
-            .updatePersonalInfo(
-              bio: bioController.text.trim(),
-              firstName: firstNameController.text.trim(),
-              lastName: lastNameController.text.trim(),
-              profilePicture: profilePictureUrl.trim(),
-              notificationSettings: "",
-              preferredLanguage: "en",
-            );
+    try {
+      ref
+          .read(registrationProvider.notifier)
+          .updatePersonalInfo(
+            bio: bioController.text.trim(),
+            firstName: firstNameController.text.trim(),
+            lastName: lastNameController.text.trim(),
+            profilePicture: profilePictureUrl.trim(),
+            notificationSettings: "",
+            preferredLanguage: "en",
+          );
 
-        bool register = await _register();
+      bool register = await _register();
 
-        if (register) {
-          context.pushNamed("workspaces");
-        }
-      } catch (e) {
-        CustomSnackbar(
-          message: "An error occurred $e",
-          color: Theme.of(context).colorScheme.error,
-        ).showSnackBar(context);
-        DevLogs.logError("Error during profile creation: $e");
+      if (register) {
+        context.pushNamed("workspaces");
       }
+    } catch (e) {
+      CustomSnackbar(
+        message: "An error occurred $e",
+        color: Theme.of(context).colorScheme.error,
+      ).showSnackBar(context);
+      DevLogs.logError("Error during profile creation: $e");
     }
   }
 

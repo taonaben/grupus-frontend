@@ -21,7 +21,11 @@ class RegisterServices {
         notification_settings: registrationData.notificationSettings,
       );
 
+      DevLogs.logInfo("Registering user with data: ${userCreateData.toJson()}");
+
       final response = await registrationApi.register(userCreateData);
+
+      DevLogs.logInfo("Registration response: ${response.message}, success: ${response.success}");
 
       if (!response.success) {
         DevLogs.logError("Registration failed: ${response.message}");

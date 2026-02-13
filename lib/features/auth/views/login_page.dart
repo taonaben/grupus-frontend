@@ -53,7 +53,7 @@ class _LoginPageState extends State<LoginPage> {
               //   "Please login to your account",
               //   style: Theme.of(context).textTheme.bodyMedium,
               // ),
-              const Gap(AppConstants.gapXLarge  ),
+              const Gap(AppConstants.gapXLarge),
               loginForm(),
               alternativeLoginOptions(),
               const Gap(AppConstants.gapXLarge),
@@ -156,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
           });
 
           if (success) {
-            context.go("/home");
+            context.go("/workspaces");
           } else {
             CustomSnackbar(
               message: "Failed to login",

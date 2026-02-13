@@ -108,7 +108,7 @@ class RegistrationApi {
   //!! REGISTER API CALL
   Future<ApiResponse> register(UserCreateModel data) async {
     try {
-      final response = await _dio.post('/auth/users/', data: data.toJson());
+      final response = await _dio.post('/users/register/', data: data.toJson());
 
       DevLogs.logInfo(
         "Register status code ${response.statusCode}: ${response.statusMessage}",
@@ -127,7 +127,7 @@ class RegistrationApi {
 
         return ApiResponse(
           success: false,
-          message: response.data['message'] ?? 'Registration failed',
+          message: response.data['detail'] ?? 'Registration failed',
           data: {},
         );
       }
@@ -135,7 +135,7 @@ class RegistrationApi {
       if (e.response != null) {
         return ApiResponse(
           success: false,
-          message: e.response?.data['message'] ?? 'Registration failed',
+          message: e.response?.data['detail'] ?? 'Registration failed',
           data: {},
         );
       } else {
