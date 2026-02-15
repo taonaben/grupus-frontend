@@ -19,6 +19,7 @@ class RegistrationProvider extends StateNotifier<RegistrationModel> {
           username: '',
           email: '',
           password: '',
+          isEmailVerified: false,
           otp: 0,
           step: 0,
         ),
@@ -71,6 +72,10 @@ class RegistrationProvider extends StateNotifier<RegistrationModel> {
     _saveToPrefs();
   }
 
+  void updateEmailVerification(bool isEmailVerified) {
+    state = state.copyWith(isEmailVerified: isEmailVerified);
+  }
+
   void nextStep() {
     state = state.copyWith(step: state.step + 1);
     _saveToPrefs();
@@ -108,6 +113,7 @@ class RegistrationProvider extends StateNotifier<RegistrationModel> {
       email: '',
       password: '',
       otp: 0,
+      isEmailVerified: false,
       step: 0,
     );
     _clearPrefs();

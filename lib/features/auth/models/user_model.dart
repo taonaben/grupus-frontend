@@ -10,6 +10,8 @@ class User {
   final int? id;
   final String username;
   final String email;
+  @JsonKey(name: "is_email_verified")
+  final bool isEmailVerified;
   final UserProfile profile;
   final UserStats stats;
   final UserSubscription subscription;
@@ -18,6 +20,7 @@ class User {
     this.id,
     required this.username,
     required this.email,
+    required this.isEmailVerified,
     required this.profile,
     required this.stats,
     required this.subscription,
@@ -28,6 +31,7 @@ class User {
     String? username,
     String? email,
     UserProfile? profile,
+    @JsonKey(name: 'is_email_verified') bool? isEmailVerified,
     UserStats? stats,
     UserSubscription? subscription,
   }) {
@@ -35,6 +39,7 @@ class User {
       id: id ?? this.id,
       username: username ?? this.username,
       email: email ?? this.email,
+      isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       profile: profile ?? this.profile,
       stats: stats ?? this.stats,
       subscription: subscription ?? this.subscription,

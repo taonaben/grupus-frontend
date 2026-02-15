@@ -13,19 +13,22 @@ class RegisterServices {
         email: registrationData.email,
         password: registrationData.password,
         password2: registrationData.password,
-        first_name: registrationData.firstName,
-        last_name: registrationData.lastName,
+        firstName: registrationData.firstName,
+        lastName: registrationData.lastName,
+        isEmailVerified: registrationData.isEmailVerified,
         bio: registrationData.bio,
-        profile_picture: registrationData.profilePicture,
-        preferred_language: registrationData.preferredLanguage,
-        notification_settings: registrationData.notificationSettings,
+        profilePicture: registrationData.profilePicture,
+        preferredLanguage: registrationData.preferredLanguage,
+        notificationSettings: registrationData.notificationSettings,
       );
 
       DevLogs.logInfo("Registering user with data: ${userCreateData.toJson()}");
 
       final response = await registrationApi.register(userCreateData);
 
-      DevLogs.logInfo("Registration response: ${response.message}, success: ${response.success}");
+      DevLogs.logInfo(
+        "Registration response: ${response.message}, success: ${response.success}",
+      );
 
       if (!response.success) {
         DevLogs.logError("Registration failed: ${response.message}");

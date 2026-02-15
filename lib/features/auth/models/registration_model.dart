@@ -7,6 +7,8 @@ class RegistrationModel {
   final String username;
   final String email;
   final String password;
+  @JsonKey(name: "is_email_verified")
+  final bool isEmailVerified;
   @JsonKey(name: 'first_name')
   final String? firstName;
   @JsonKey(name: 'last_name')
@@ -25,6 +27,7 @@ class RegistrationModel {
     required this.username,
     required this.email,
     required this.password,
+    required this.isEmailVerified,
     this.firstName,
     this.lastName,
     this.bio,
@@ -41,6 +44,7 @@ class RegistrationModel {
     String? password,
     String? firstName,
     String? lastName,
+    bool? isEmailVerified,
     String? bio,
     String? profilePicture,
     String? preferredLanguage,
@@ -54,6 +58,7 @@ class RegistrationModel {
       password: password ?? this.password,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
+      isEmailVerified: isEmailVerified?? this.isEmailVerified,
       bio: bio ?? this.bio,
       profilePicture: profilePicture ?? this.profilePicture,
       preferredLanguage: preferredLanguage ?? this.preferredLanguage,

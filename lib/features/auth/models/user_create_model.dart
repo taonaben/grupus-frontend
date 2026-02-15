@@ -6,26 +6,37 @@ part 'user_create_model.g.dart';
 class UserCreateModel {
   final String username;
   final String email;
+
   final String password;
   final String password2;
-  final String? first_name;
-  final String? last_name;
+
+  @JsonKey(name: "is_email_verified")
+  final bool? isEmailVerified;
+  @JsonKey(name: 'first_name')
+  final String? firstName;
+  @JsonKey(name: 'last_name')
+  final String? lastName;
   final String? bio;
-  final String? profile_picture;
-  final String? preferred_language;
-  final String? notification_settings;
+
+  @JsonKey(name: 'profile_picture')
+  final String? profilePicture;
+  @JsonKey(name: 'preferred_language')
+  final String? preferredLanguage;
+  @JsonKey(name: 'notification_settings')
+  final String? notificationSettings;
 
   UserCreateModel({
     required this.username,
     required this.email,
     required this.password,
     required this.password2,
-    this.first_name,
-    this.last_name,
+    this.isEmailVerified,
+    this.firstName,
+    this.lastName,
     this.bio,
-    this.profile_picture,
-    this.preferred_language,
-    this.notification_settings,
+    this.profilePicture,
+    this.preferredLanguage,
+    this.notificationSettings,
   });
 
   factory UserCreateModel.fromJson(Map<String, dynamic> json) =>
