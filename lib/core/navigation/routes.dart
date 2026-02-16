@@ -8,7 +8,7 @@ import 'package:grupus/features/auth/views/registration/registration_page.dart';
 import 'package:grupus/features/auth/views/registration/verify_email_screen.dart';
 import 'package:grupus/features/groups/views/groups_page.dart';
 import 'package:grupus/features/resources/views/resources_page.dart';
-import 'package:grupus/features/workspaces/workspaces.dart';
+import 'package:grupus/features/workspaces/views/workspaces.dart';
 import 'package:grupus/features/profile/profile_tab.dart';
 import 'nav_bar_model.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
