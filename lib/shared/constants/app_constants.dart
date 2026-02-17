@@ -12,9 +12,10 @@ class AppConstants {
   // Padding and Spacing
   static const double paddingXSmall = 4;
   static const double paddingSmall = 8;
-  static const double paddingMedium = 16;
-  static const double paddingLarge = 24;
-  static const double paddingXLarge = 32;
+  static const double paddingMedium = 12;
+  static const double paddingLarge = 16;
+  static const double paddingXLarge = 24;
+  static const double paddingXXLarge = 32;
 
   // Border Radius
   static const double borderRadiusSmall = 4;
@@ -49,7 +50,6 @@ class AppConstants {
   static const double progressIndicatorSizeMedium = 24;
   static const double progressIndicatorSizeLarge = 32;
   static const double progressIndicatorSizeXLarge = 48;
-  
 
   // API Timeouts
   static const Duration apiTimeout = Duration(seconds: 30);
@@ -61,5 +61,5 @@ class AppConstants {
   static const String loadingMessage = 'Loading...';
 
   //API Endpoints
-  static const String apiBaseUrl = 'http://192.168.1.167:8000';
+  static const String apiBaseUrl = 'http://192.168.1.166:8000';
 }
