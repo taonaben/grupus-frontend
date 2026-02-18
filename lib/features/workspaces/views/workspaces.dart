@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:grupus/features/auth/services/auth_services.dart';
 import 'package:grupus/features/workspaces/components/workspace_card.dart';
-import 'package:grupus/features/workspaces/state/workspaces.dart';
+import 'package:grupus/features/workspaces/state/workspaces_provider.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
 import 'package:grupus/shared/utils/logs.dart';
