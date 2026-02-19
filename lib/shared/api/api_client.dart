@@ -3,6 +3,14 @@ import 'package:grupus/shared/constants/app_constants.dart';
 import 'package:grupus/shared/utils/shared_prefs.dart';
 
 class ApiClient {
+  /// List of endpoints that don't require Authorization header
+  static const List<String> _publicEndpoints = [
+    '/users/login/',
+    '/auth/jwt/refresh/',
+    '/auth/jwt/verify/',
+    '/auth/logout/',
+  ];
+
   ApiClient._internal() {
     _dio = Dio(
       BaseOptions(
@@ -20,9 +28,12 @@ class ApiClient {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           try {
-            final token = await getSP('accessToken');
-            if (token.isNotEmpty) {
-              options.headers['Authorization'] = 'Bearer $token';
+            // Only add Authorization header if the endpoint requires it
+            if (!_publicEndpoints.contains(options.path)) {
+              final token = await getSP('accessToken');
+              if (token.isNotEmpty) {
+                options.headers['Authorization'] = 'Bearer $token';
+              }
             }
           } catch (_) {}
           handler.next(options);

@@ -5,7 +5,7 @@ import 'package:grupus/shared/utils/logs.dart';
 
 class WorkspaceRetrieveServices {
   var workspaceRetrieveApi = WorkspaceRetrieveApi();
-
+ 
   Future<ApiListResponse<WorkspaceModel>?> retrieveAllWorkspaces() async {
     try {
       var response = await workspaceRetrieveApi.retrieveAllWorkspaces();

@@ -45,10 +45,32 @@ class WorkspaceCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
-            
+            _buildMetadataSection(context: context),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMetadataSection({required BuildContext context}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Gap(AppConstants.gapMedium),
+        Text(
+          'Type: ${workspace.workspace_type_name}',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        if (workspace.description != null) ...[
+          const Gap(AppConstants.gapSmall),
+          Text(
+            workspace.description!,
+            style: Theme.of(context).textTheme.bodySmall,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
     );
   }
 }

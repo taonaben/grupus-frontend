@@ -20,9 +20,16 @@ class LoginApi {
         data: {'username': username, 'password': password},
       );
 
-      DevLogs.logInfo(
-        "Login status code ${response.statusCode}: ${response.statusMessage}",
-      );
+      String? oldAccessToken = await getSP("accessToken");
+      String? oldRefreshToken = await getSP("refreshToken");
+
+      if (oldAccessToken != null || oldRefreshToken != null) {
+        DevLogs.logInfo(
+          "Existing tokens found, clearing them before saving new ones",
+        );
+        await removeSP("accessToken");
+        await removeSP("refreshToken");
+      }
 
       if (response.statusCode == 200) {
         return ApiResponse(
@@ -170,7 +177,7 @@ class LoginApi {
   Future<ApiResponse> logout() async {
     try {
       final refreshToken = await getSP("refreshToken");
-  
+
       if (refreshToken.isEmpty) {
         return ApiResponse(
           success: false,
@@ -179,12 +186,11 @@ class LoginApi {
         );
       }
 
-
       final response = await _dio.post(
         '/auth/logout/',
         data: {"refresh": refreshToken},
       );
-     
+
       if (response.statusCode == 200) {
         return ApiResponse(
           message: "Logout Successful",

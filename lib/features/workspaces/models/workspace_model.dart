@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:grupus/features/workspaces/utils/workspace_type_mapper.dart';
 
 part 'workspace_model.g.dart';
 
@@ -23,6 +24,11 @@ class WorkspaceModel {
   final String? updated_at;
   final String? created_by;
 
+  /// Strongly typed metadata based on workspace_type
+  /// Auto-cast from the generic metadata field during deserialization
+  @JsonKey(ignore: true)
+  final Object? typedMetadata;
+
   WorkspaceModel({
     this.id,
     required this.name,
@@ -42,10 +48,41 @@ class WorkspaceModel {
     this.created_at,
     this.updated_at,
     this.created_by,
+    this.typedMetadata,
   });
 
-  factory WorkspaceModel.fromJson(Map<String, dynamic> json) =>
-      _$WorkspaceModelFromJson(json);
+  factory WorkspaceModel.fromJson(Map<String, dynamic> json) {
+    final model = _$WorkspaceModelFromJson(json);
+
+    // Cast metadata to the appropriate type model
+    final typedMetadata = WorkspaceTypeMapper.castMetadata(
+      model.workspace_type,
+      model.metadata,
+    );
+
+    // Return a new instance with the typed metadata
+    return WorkspaceModel(
+      id: model.id,
+      name: model.name,
+      description: model.description,
+      workspace_type: model.workspace_type,
+      workspace_type_name: model.workspace_type_name,
+      access_code: model.access_code,
+      is_public: model.is_public,
+      requires_approval: model.requires_approval,
+      member_count: model.member_count,
+      max_members: model.max_members,
+      channel_count: model.channel_count,
+      group_count: model.group_count,
+      content_guidelines: model.content_guidelines,
+      rules: model.rules,
+      metadata: model.metadata,
+      created_at: model.created_at,
+      updated_at: model.updated_at,
+      created_by: model.created_by,
+      typedMetadata: typedMetadata,
+    );
+  }
 
   Map<String, dynamic> toJson() => _$WorkspaceModelToJson(this);
 }
