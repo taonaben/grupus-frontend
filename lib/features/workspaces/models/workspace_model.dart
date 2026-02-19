@@ -24,10 +24,10 @@ class WorkspaceModel {
   final String? updated_at;
   final String? created_by;
 
-  /// Strongly typed metadata based on workspace_type
+  /// Cache for strongly typed metadata based on workspace_type
   /// Auto-cast from the generic metadata field during deserialization
   @JsonKey(ignore: true)
-  final Object? typedMetadata;
+  Object? _typedMetadata;
 
   WorkspaceModel({
     this.id,
@@ -48,15 +48,15 @@ class WorkspaceModel {
     this.created_at,
     this.updated_at,
     this.created_by,
-    this.typedMetadata,
-  });
+    Object? typedMetadata,
+  }) : _typedMetadata = typedMetadata;
 
   factory WorkspaceModel.fromJson(Map<String, dynamic> json) {
     final model = _$WorkspaceModelFromJson(json);
 
-    // Cast metadata to the appropriate type model
+    // Cast metadata to the appropriate type model using workspace_type_name
     final typedMetadata = WorkspaceTypeMapper.castMetadata(
-      model.workspace_type,
+      model.workspace_type_name,
       model.metadata,
     );
 
@@ -82,6 +82,15 @@ class WorkspaceModel {
       created_by: model.created_by,
       typedMetadata: typedMetadata,
     );
+  }
+
+  /// Strongly typed metadata accessor with lazy casting
+  Object? get typedMetadata {
+    _typedMetadata ??= WorkspaceTypeMapper.castMetadata(
+      workspace_type_name,
+      metadata,
+    );
+    return _typedMetadata;
   }
 
   Map<String, dynamic> toJson() => _$WorkspaceModelToJson(this);

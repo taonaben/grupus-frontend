@@ -23,7 +23,7 @@ class LoginApi {
       String? oldAccessToken = await getSP("accessToken");
       String? oldRefreshToken = await getSP("refreshToken");
 
-      if (oldAccessToken != null || oldRefreshToken != null) {
+      if (oldAccessToken.isNotEmpty || oldRefreshToken.isNotEmpty) {
         DevLogs.logInfo(
           "Existing tokens found, clearing them before saving new ones",
         );

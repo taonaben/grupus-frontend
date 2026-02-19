@@ -12,32 +12,41 @@ class WorkspaceTypeMapper {
     Map<String, dynamic>? metadata,
   ) {
     if (metadata == null || metadata.isEmpty) {
+      DevLogs.logWarning(
+        'Metadata is null or empty for workspace type: $workspaceTypeName',
+      );
       return null;
     }
 
     try {
-      switch (workspaceTypeName.toLowerCase().trim()) {
-        case 'cohort':
-          return CohortModel.fromJson(metadata);
-        case 'course':
-          return CourseModel.fromJson(metadata);
-        case 'event':
-          return EventModel.fromJson(metadata);
-        case 'hackathon':
-          return HackathonModel.fromJson(metadata);
-        case 'module':
-          return ModuleModel.fromJson(metadata);
-        case 'project':
-          return ProjectModel.fromJson(metadata);
-        case 'research':
-          return ResearchModel.fromJson(metadata);
-        default:
-          DevLogs.logWarning('Unknown workspace type: $workspaceTypeName');
-          return null;
+      DevLogs.logInfo(
+        'Attempting to cast metadata for type "$workspaceTypeName": $metadata',
+      );
+
+      final result = switch (workspaceTypeName.toLowerCase().trim()) {
+        'cohort' => CohortModel.fromJson(metadata),
+        'course' => CourseModel.fromJson(metadata),
+        'event' => EventModel.fromJson(metadata),
+        'hackathon' => HackathonModel.fromJson(metadata),
+        'module' => ModuleModel.fromJson(metadata),
+        'project' => ProjectModel.fromJson(metadata),
+        'research' => ResearchModel.fromJson(metadata),
+        _ => null,
+      };
+
+      if (result == null) {
+        DevLogs.logWarning('Unknown workspace type: $workspaceTypeName');
+      } else {
+        DevLogs.logInfo('Successfully cast metadata to ${result.runtimeType}');
       }
-    } catch (e) {
-      DevLogs.logWarning(
-        'Failed to cast metadata for workspace type $workspaceTypeName: $e',
+
+      return result;
+    } catch (e, stackTrace) {
+      DevLogs.logError(
+        'Failed to cast metadata for workspace type "$workspaceTypeName"\n'
+        'Metadata: $metadata\n'
+        'Error: $e\n'
+        'StackTrace: $stackTrace',
       );
       return null;
     }
