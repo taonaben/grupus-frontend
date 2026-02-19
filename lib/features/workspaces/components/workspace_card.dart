@@ -7,6 +7,7 @@ import 'package:grupus/features/workspaces/models/workspace_types/event_model.da
 import 'package:grupus/features/workspaces/models/workspace_types/module_model.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
 import 'package:grupus/shared/utils/logs.dart';
+import 'package:grupus/shared/utils/string_methods.dart';
 
 class WorkspaceCard extends StatelessWidget {
   final WorkspaceModel workspace;
@@ -32,7 +33,7 @@ class WorkspaceCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     workspace.name,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.bodyLarge,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
@@ -45,7 +46,7 @@ class WorkspaceCard extends StatelessWidget {
             ),
             // const Gap(AppConstants.gapSmall),
             Text(
-              workspace.workspace_type_name,
+              capitalize(workspace.workspace_type_name.trim()),
               style: Theme.of(context).textTheme.bodyMedium,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -58,12 +59,8 @@ class WorkspaceCard extends StatelessWidget {
   }
 
   Widget _buildMetadataSection(WorkspaceModel workspace) {
-    DevLogs.logInfo(
-      'Building metadata for workspace: ${workspace.name} '
-      '(type: ${workspace.workspace_type_name}, '
-      'typedMetadata: ${workspace.typedMetadata.runtimeType})',
-    );
-    return switch (workspace.workspace_type_name) {
+
+    return switch (workspace.workspace_type_name.toLowerCase().trim()) {
       'cohort' => _cohortWidget(
         cohortData: workspace.typedMetadata as CohortModel?,
       ),
@@ -103,8 +100,9 @@ class WorkspaceCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Mentor: ${cohortData.mentor}'),
-        Text('Start Date: ${cohortData.start_date}'),
-        Text('End Date: ${cohortData.end_date}'),
+        Text(
+          '${formatDayDate(cohortData.start_date)} - ${formatDayDate(cohortData.end_date)}',
+        ),
       ],
     );
   }
@@ -126,17 +124,13 @@ class WorkspaceCard extends StatelessWidget {
 
   Widget _moduleWidget({required ModuleModel? moduleData}) {
     if (moduleData == null) {
-      DevLogs.logError(
-        'Module metadata is null for workspace ${workspace.name}\n'
-        'Raw metadata: ${workspace.metadata}',
-      );
       return const SizedBox.shrink();
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Module Code: ${moduleData.module_code}'),
+        Text(moduleData.module_code),
         // Text('Duration: ${moduleData.duration}'),
         // Text('Level: ${moduleData.level}'),
       ],
@@ -152,8 +146,10 @@ class WorkspaceCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Location: ${eventData.location}'),
-        // Text('Date: ${eventData.date}'),
-        // Text('Duration: ${eventData.duration}'),
+        Text(
+          '${formatDayDate(eventData.start_date)} - ${formatDayDate(eventData.end_date)}',
+        ),
+        // Text('Duration: ${eventData.}'),
       ],
     );
   }

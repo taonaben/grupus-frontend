@@ -8,7 +8,8 @@ import 'package:grupus/features/auth/views/registration/registration_page.dart';
 import 'package:grupus/features/auth/views/registration/verify_email_screen.dart';
 import 'package:grupus/features/groups/views/groups_page.dart';
 import 'package:grupus/features/resources/views/resources_page.dart';
-import 'package:grupus/features/workspaces/views/workspaces.dart';
+import 'package:grupus/features/workspaces/views/create_workspace_page.dart';
+import 'package:grupus/features/workspaces/views/workspaces_main.dart';
 import 'package:grupus/features/profile/profile_tab.dart';
 import 'nav_bar_model.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -73,6 +74,12 @@ GoRouter createRouter({required String initialLocation}) {
         path: '/register/create-profile',
         name: "create-profile",
         builder: (context, state) => const ProfileCreateScreen(),
+      ),
+
+      GoRoute(
+        path: '/workspaces/create',
+        name: "create-workspace",
+        builder: (context, state) => const CreateWorkspacePage(),
       ),
 
       StatefulShellRoute.indexedStack(
