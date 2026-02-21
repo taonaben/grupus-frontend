@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:grupus/features/workspaces/components/workspace_type_metadata_fields.dart';
 import 'package:grupus/features/workspaces/state/workspace_types_provider.dart';
 import 'package:grupus/shared/components/custom_dropdown_form_field.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
@@ -20,6 +21,10 @@ class CreateWorkspacePage extends ConsumerStatefulWidget {
 }
 
 class _CreateWorkspacePageState extends ConsumerState<CreateWorkspacePage> {
+  String? selectedType;
+  Map<String, dynamic>? selectedTypeData;
+  Map<String, dynamic> metadataPayload = {};
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -36,19 +41,21 @@ class _CreateWorkspacePageState extends ConsumerState<CreateWorkspacePage> {
         ),
       ),
 
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.paddingLarge,
-          ),
-          child: Column(
-            children: [
-              _buildWorkspaceForm(),
-              _getWorkspaceTypeOptions(),
-              const Gap(AppConstants.gapMedium),
-              _buildWorkspaceTypeForm(),
-              CustomFilledButton(btnLabel: "Create", onTap: () {}),
-            ],
+      body: SingleChildScrollView(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.paddingLarge,
+            ),
+            child: Column(
+              children: [
+                _buildWorkspaceForm(),
+                _getWorkspaceTypeOptions(),
+                const Gap(AppConstants.gapMedium),
+                _buildWorkspaceTypeForm(),
+                CustomFilledButton(btnLabel: "Create", onTap: () {}),
+              ],
+            ),
           ),
         ),
       ),
@@ -66,8 +73,6 @@ class _CreateWorkspacePageState extends ConsumerState<CreateWorkspacePage> {
       ],
     );
   }
-
-  String? selectedType;
 
   Widget _getWorkspaceTypeOptions() {
     final workspaceTypesAsyncValue = ref.watch(allWorkspaceTypesProvider);
@@ -90,7 +95,24 @@ class _CreateWorkspacePageState extends ConsumerState<CreateWorkspacePage> {
                     ),
                   )
                   .toList(),
-          onChanged: (value) => setState(() => selectedType = value),
+          onChanged: (value) {
+            setState(() {
+              selectedType = value;
+              if (value == null) {
+                selectedTypeData = null;
+                metadataPayload = {};
+                return;
+              }
+
+              final matchedType = types.firstWhere(
+                (type) => type['name'] == value,
+                orElse: () => <String, dynamic>{},
+              );
+
+              selectedTypeData = matchedType.isEmpty ? null : matchedType;
+              metadataPayload = {};
+            });
+          },
         );
       },
       loading: () => const CustomProgressIndicator(),
@@ -102,6 +124,16 @@ class _CreateWorkspacePageState extends ConsumerState<CreateWorkspacePage> {
   }
 
   Widget _buildWorkspaceTypeForm() {
-    return Column(mainAxisSize: MainAxisSize.min, children: []);
+    if (selectedTypeData == null || selectedType == null) {
+      return const SizedBox.shrink();
+    }
+
+    return WorkspaceTypeMetadataFields(
+      workspaceType: selectedTypeData!,
+      initialMetadata: metadataPayload,
+      onMetadataChanged: (metadata) {
+        setState(() => metadataPayload = metadata);
+      },
+    );
   }
 }
