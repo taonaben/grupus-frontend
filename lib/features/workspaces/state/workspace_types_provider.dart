@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:grupus/features/workspaces/services/workspace_types_services.dart';
-import 'package:grupus/shared/models/api_list_response.dart';
 import 'package:grupus/shared/utils/logs.dart';
 
 final allWorkspaceTypesProvider = FutureProvider<List<Map<String, dynamic>>>((
@@ -13,7 +12,7 @@ final allWorkspaceTypesProvider = FutureProvider<List<Map<String, dynamic>>>((
         return [];
       }
 
-      return (value as ApiListResponse<Map<String, dynamic>>).items;
+      return value;
     });
   } catch (e) {
     DevLogs.logError('Error in allWorkspaceTypesProvider: $e');

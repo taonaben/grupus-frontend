@@ -1,13 +1,25 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:grupus/features/workspaces/state/workspace_types_provider.dart';
+import 'package:grupus/shared/components/custom_dropdown_form_field.dart';
 import 'package:grupus/shared/components/custom_filled_btn.dart';
+import 'package:grupus/shared/components/custom_progress_indicator.dart';
 import 'package:grupus/shared/components/custom_textfield.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
+import 'package:grupus/shared/utils/logs.dart';
+import 'package:grupus/shared/utils/string_methods.dart';
 
-class CreateWorkspacePage extends StatelessWidget {
+class CreateWorkspacePage extends ConsumerStatefulWidget {
   const CreateWorkspacePage({super.key});
 
+  @override
+  ConsumerState<CreateWorkspacePage> createState() =>
+      _CreateWorkspacePageState();
+}
+
+class _CreateWorkspacePageState extends ConsumerState<CreateWorkspacePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,6 +45,7 @@ class CreateWorkspacePage extends StatelessWidget {
             children: [
               _buildWorkspaceForm(),
               _getWorkspaceTypeOptions(),
+              const Gap(AppConstants.gapMedium),
               _buildWorkspaceTypeForm(),
               CustomFilledButton(btnLabel: "Create", onTap: () {}),
             ],
@@ -54,8 +67,38 @@ class CreateWorkspacePage extends StatelessWidget {
     );
   }
 
+  String? selectedType;
+
   Widget _getWorkspaceTypeOptions() {
-    return Column(mainAxisSize: MainAxisSize.min, children: []);
+    final workspaceTypesAsyncValue = ref.watch(allWorkspaceTypesProvider);
+
+    return workspaceTypesAsyncValue.when(
+      data: (types) {
+        if (types.isEmpty) {
+          return const Text("No workspace types available");
+        }
+
+        return CustomDropdownFormField(
+          labelText: 'Select Space Type',
+          value: selectedType,
+          items:
+              types
+                  .map(
+                    (type) => DropdownMenuItem(
+                      value: type['name'] as String,
+                      child: Text(capitalize(type['name'] as String)),
+                    ),
+                  )
+                  .toList(),
+          onChanged: (value) => setState(() => selectedType = value),
+        );
+      },
+      loading: () => const CustomProgressIndicator(),
+      error: (e, st) {
+        DevLogs.logError('Error loading workspace types: $e');
+        return const Text("Failed to load workspace types");
+      },
+    );
   }
 
   Widget _buildWorkspaceTypeForm() {
