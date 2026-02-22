@@ -26,6 +26,7 @@ WorkspaceModel _$WorkspaceModelFromJson(Map<String, dynamic> json) =>
       created_at: json['created_at'] as String?,
       updated_at: json['updated_at'] as String?,
       created_by: json['created_by'] as String?,
+      typedMetadata: json['typedMetadata'],
     );
 
 Map<String, dynamic> _$WorkspaceModelToJson(WorkspaceModel instance) =>
@@ -48,4 +49,5 @@ Map<String, dynamic> _$WorkspaceModelToJson(WorkspaceModel instance) =>
       'created_at': instance.created_at,
       'updated_at': instance.updated_at,
       'created_by': instance.created_by,
+      'typedMetadata': instance.typedMetadata,
     };
