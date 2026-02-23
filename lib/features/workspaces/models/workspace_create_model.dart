@@ -5,6 +5,7 @@ part 'workspace_create_model.g.dart';
 class WorkspaceCreateModel {
   final String name;
   final String? description;
+   final Map<String, dynamic> metadata;
   final String workspace_type;
   final bool? is_public;
   final bool? requires_approval;
@@ -14,6 +15,7 @@ class WorkspaceCreateModel {
   WorkspaceCreateModel({
     required this.name,
     this.description,
+    required this.metadata,
     required this.workspace_type,
     this.is_public,
     this.requires_approval,

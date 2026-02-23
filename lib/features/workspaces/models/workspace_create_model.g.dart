@@ -11,6 +11,7 @@ WorkspaceCreateModel _$WorkspaceCreateModelFromJson(
 ) => WorkspaceCreateModel(
   name: json['name'] as String,
   description: json['description'] as String?,
+  metadata: json['metadata'] as Map<String, dynamic>,
   workspace_type: json['workspace_type'] as String,
   is_public: json['is_public'] as bool?,
   requires_approval: json['requires_approval'] as bool?,
@@ -23,6 +24,7 @@ Map<String, dynamic> _$WorkspaceCreateModelToJson(
 ) => <String, dynamic>{
   'name': instance.name,
   'description': instance.description,
+  'metadata': instance.metadata,
   'workspace_type': instance.workspace_type,
   'is_public': instance.is_public,
   'requires_approval': instance.requires_approval,
