@@ -6,6 +6,7 @@ import 'package:grupus/features/auth/views/registration/profile_create_screen.da
 import 'package:grupus/features/auth/views/registration/username_screen.dart';
 import 'package:grupus/features/auth/views/registration/registration_page.dart';
 import 'package:grupus/features/auth/views/registration/verify_email_screen.dart';
+import 'package:grupus/features/chat/views/chat_screen.dart';
 import 'package:grupus/features/groups/views/groups_page.dart';
 import 'package:grupus/features/resources/views/resources_page.dart';
 import 'package:grupus/features/workspaces/views/create_workspace_page.dart';
@@ -82,6 +83,21 @@ GoRouter createRouter({required String initialLocation}) {
         builder: (context, state) => const CreateWorkspacePage(),
       ),
 
+      GoRoute(
+        path: '/chat',
+        name: "chat",
+        builder: (context, state) {
+          final ChatScreenConfig config =
+              state.extra as ChatScreenConfig? ??
+              ChatScreenConfig(
+                roomId: 'default-room-id',
+                roomName: 'General Chat',
+                baseUrl: 'ws://localhost:8000',
+                token: 'your-jwt-token-here',
+              );
+          return ChatScreen(config: config);
+        },
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return Home(navigationShell: navigationShell);

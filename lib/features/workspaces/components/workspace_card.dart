@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import 'package:grupus/features/chat/views/chat_screen.dart';
 import 'package:grupus/features/workspaces/models/workspace_model.dart';
 import 'package:grupus/features/workspaces/models/workspace_types/cohort_model.dart';
 import 'package:grupus/features/workspaces/models/workspace_types/course_model.dart';
@@ -7,6 +9,7 @@ import 'package:grupus/features/workspaces/models/workspace_types/event_model.da
 import 'package:grupus/features/workspaces/models/workspace_types/module_model.dart';
 import 'package:grupus/shared/constants/app_constants.dart';
 import 'package:grupus/shared/utils/logs.dart';
+import 'package:grupus/shared/utils/shared_prefs.dart';
 import 'package:grupus/shared/utils/string_methods.dart';
 
 class WorkspaceCard extends StatelessWidget {
@@ -16,50 +19,70 @@ class WorkspaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-      ),
-      margin: const EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    workspace.name,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+    return GestureDetector(
+      onTap: () async {
+        String accessToken = await getSP("accessToken") ?? '';
+        if (accessToken.isEmpty) {
+          DevLogs.logError("No access token found in shared preferences.");
+          // Handle the case where the token is missing, e.g., show an error message or redirect to login
+          return;
+        }
+        context.pushNamed(
+          'chat',
+          extra: ChatScreenConfig(
+            roomId: workspace.id!,
+            roomName: workspace.name,
+            baseUrl: AppConstants.apiBaseUrl,
+            token: accessToken,
+          ),
+        );
+      },
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        ),
+        margin: const EdgeInsets.symmetric(
+          vertical: AppConstants.paddingMedium,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.paddingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      workspace.name,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: Icon(Icons.more_horiz_outlined),
-                ),
-              ],
-            ),
-            // const Gap(AppConstants.gapSmall),
-            Text(
-              capitalize(workspace.workspace_type_name.trim()),
-              style: Theme.of(context).textTheme.bodyMedium,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-            _buildMetadataSection(workspace),
-          ],
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.more_horiz_outlined),
+                  ),
+                ],
+              ),
+              // const Gap(AppConstants.gapSmall),
+              Text(
+                capitalize(workspace.workspace_type_name.trim()),
+                style: Theme.of(context).textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              _buildMetadataSection(workspace),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildMetadataSection(WorkspaceModel workspace) {
-
     return switch (workspace.workspace_type_name.toLowerCase().trim()) {
       'cohort' => _cohortWidget(
         cohortData: workspace.typedMetadata as CohortModel?,

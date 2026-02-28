@@ -185,6 +185,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  chat_bubbles:
+    dependency: "direct main"
+    description:
+      name: chat_bubbles
+      sha256: "821e13d3d3b32d6bb31f98e91f6c1fc525c9e59af4b9f64a6e513933fe0de922"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.8.0"
   checked_yaml:
     dependency: transitive
     description:
@@ -1582,7 +1590,7 @@ packages:
     source: hosted
     version: "1.0.1"
   web_socket_channel:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: web_socket_channel
       sha256: d645757fb0f4773d602444000a8131ff5d48c9e47adfe9772652dd1a4f2d45c8

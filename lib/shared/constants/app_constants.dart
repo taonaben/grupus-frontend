@@ -61,5 +61,5 @@ class AppConstants {
   static const String loadingMessage = 'Loading...';
 
   //API Endpoints
-  static const String apiBaseUrl = 'http://192.168.1.166:8000';
+  static const String apiBaseUrl = 'http://192.168.1.167:8000';
 }
