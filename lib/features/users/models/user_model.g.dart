@@ -7,15 +7,24 @@ part of 'user_model.dart';
 // **************************************************************************
 
 User _$UserFromJson(Map<String, dynamic> json) => User(
-  id: (json['id'] as num?)?.toInt(),
+  id: json['id'] as String?,
   username: json['username'] as String,
   email: json['email'] as String,
   isEmailVerified: json['is_email_verified'] as bool,
-  profile: UserProfile.fromJson(json['profile'] as Map<String, dynamic>),
-  stats: UserStats.fromJson(json['stats'] as Map<String, dynamic>),
-  subscription: UserSubscription.fromJson(
-    json['subscription'] as Map<String, dynamic>,
-  ),
+  profile:
+      json['profile'] == null
+          ? null
+          : UserProfile.fromJson(json['profile'] as Map<String, dynamic>),
+  stats:
+      json['stats'] == null
+          ? null
+          : UserStats.fromJson(json['stats'] as Map<String, dynamic>),
+  subscription:
+      json['subscription'] == null
+          ? null
+          : UserSubscription.fromJson(
+            json['subscription'] as Map<String, dynamic>,
+          ),
 );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:grupus/core/navigation/routes.dart' show createRouter;
 import 'package:grupus/features/auth/services/auth_services.dart';
+import 'package:grupus/features/users/state/user_provider.dart';
 import 'package:grupus/shared/theme/theme_provider.dart' show themeProvider;
 
 void main() async {
@@ -15,7 +16,24 @@ void main() async {
     initialLocation: loggedIn ? '/workspaces' : '/login',
   );
 
-  runApp(ProviderScope(child: MyApp(router: router)));
+  // Create a ProviderContainer to pre-fetch and cache user data
+  final container = ProviderContainer();
+  
+  // Pre-fetch user data if logged in (caches it for later use)
+  if (loggedIn) {
+    try {
+      await container.read(currentUserProvider.future);
+    } catch (e) {
+      print('Error pre-fetching user data: $e');
+    }
+  }
+
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: MyApp(router: router),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {

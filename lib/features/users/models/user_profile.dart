@@ -10,7 +10,7 @@ class UserProfile {
   final String? bio;
   final String? profile_picture;
   final String? preferred_language;
-  final String? notification_settings;
+  final Map<String, dynamic>? notification_settings;
 
   UserProfile({
     this.user,

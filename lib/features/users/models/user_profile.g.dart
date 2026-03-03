@@ -13,7 +13,7 @@ UserProfile _$UserProfileFromJson(Map<String, dynamic> json) => UserProfile(
   bio: json['bio'] as String?,
   profile_picture: json['profile_picture'] as String?,
   preferred_language: json['preferred_language'] as String?,
-  notification_settings: json['notification_settings'] as String?,
+  notification_settings: json['notification_settings'] as Map<String, dynamic>?,
 );
 
 Map<String, dynamic> _$UserProfileToJson(UserProfile instance) =>

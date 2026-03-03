@@ -1,37 +1,37 @@
-import 'package:grupus/features/auth/models/user_profile.dart';
-import 'package:grupus/features/auth/models/user_stats.dart';
-import 'package:grupus/features/auth/models/user_subscription.dart';
+import 'package:grupus/features/users/models/user_profile.dart';
+import 'package:grupus/features/users/models/user_stats.dart';
+import 'package:grupus/features/users/models/user_subscription.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'user_model.g.dart';
 
 @JsonSerializable()
 class User {
-  final int? id;
+  final String? id;
   final String username;
   final String email;
   @JsonKey(name: "is_email_verified")
   final bool isEmailVerified;
-  final UserProfile profile;
-  final UserStats stats;
-  final UserSubscription subscription;
+  final UserProfile? profile;
+  final UserStats? stats;
+  final UserSubscription? subscription;
 
   User({
     this.id,
     required this.username,
     required this.email,
     required this.isEmailVerified,
-    required this.profile,
-    required this.stats,
-    required this.subscription,
+    this.profile,
+    this.stats,
+    this.subscription,
   });
 
   User copyWith({
-    int? id,
+    String? id,
     String? username,
     String? email,
     UserProfile? profile,
-    @JsonKey(name: 'is_email_verified') bool? isEmailVerified,
+    bool? isEmailVerified,
     UserStats? stats,
     UserSubscription? subscription,
   }) {
