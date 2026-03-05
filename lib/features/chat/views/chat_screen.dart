@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:grupus/features/users/state/user_provider.dart';
 import 'package:grupus/shared/components/chat/chat_message_bubble.dart';
 import 'package:grupus/shared/components/chat/message_bar.dart';
 import 'package:grupus/shared/components/chat/typing_indicator.dart';
+import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import '../extensions/chat_extensions.dart';
@@ -78,14 +80,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (message.trim().isEmpty) return;
 
     try {
-      // Create and add local message optimistically
+      final userFromProvider = ref.read(currentUserProvider).valueOrNull;
+      if (userFromProvider == null) {
+        CustomSnackbar(
+          message: "User not authenticated",
+          color: Theme.of(context).colorScheme.error,
+        ).showSnackBar(context);
+        return;
+      }
+
       final localMessage = Message(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         content: message.trim(),
         messageType: MessageType.text,
         sender: User(
-          id: 'current_user_id', //!! Should be replaced with actual current user ID
-          username: 'Me', //!! Should be replaced with actual username
+          id: userFromProvider.id ?? '',
+          username: userFromProvider.username,
         ),
         channelId: widget.config.roomId,
         createdAt: DateTime.now(),
