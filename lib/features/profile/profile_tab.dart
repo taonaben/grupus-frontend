@@ -42,8 +42,8 @@ class _ProfileTabState extends ConsumerState<ProfileTab> {
                         child: Icon(Icons.person, size: 50),
                       ),
                       const SizedBox(height: 20),
-                      const Text(
-                        'User Profile',
+                      Text(
+                        user?.email ?? 'No email',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
