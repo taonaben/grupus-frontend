@@ -17,6 +17,13 @@ class WebSocketEventPayloadBuilder {
     return {'type': 'typing', 'is_typing': isTyping};
   }
 
+  Map<String, dynamic> buildReaction({
+    required String messageId,
+    required String emoji,
+  }) {
+    return {'type': 'reaction', 'message_id': messageId, 'emoji': emoji};
+  }
+
   Map<String, dynamic> buildReminder(
     String content, {
     required DateTime dueDate,

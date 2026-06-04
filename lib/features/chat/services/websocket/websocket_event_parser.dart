@@ -2,7 +2,14 @@ import 'dart:convert';
 
 import '../../models/message_model.dart';
 
-enum ParsedWebSocketEventType { message, typing, presence, error, unknown }
+enum ParsedWebSocketEventType {
+  message,
+  typing,
+  presence,
+  reaction,
+  error,
+  unknown,
+}
 
 class ParsedWebSocketEvent {
   final ParsedWebSocketEventType type;
@@ -12,6 +19,7 @@ class ParsedWebSocketEvent {
   final UserPresence? presence;
   final String? errorMessage;
   final String? rawEventType;
+  final ReactionEvent? reaction;
 
   const ParsedWebSocketEvent._({
     required this.type,
@@ -21,6 +29,7 @@ class ParsedWebSocketEvent {
     this.presence,
     this.errorMessage,
     this.rawEventType,
+    this.reaction,
   });
 
   factory ParsedWebSocketEvent.message(Message message) {
@@ -52,6 +61,13 @@ class ParsedWebSocketEvent {
     );
   }
 
+  factory ParsedWebSocketEvent.reaction(ReactionEvent reaction) {
+    return ParsedWebSocketEvent._(
+      type: ParsedWebSocketEventType.reaction,
+      reaction: reaction,
+    );
+  }
+
   factory ParsedWebSocketEvent.unknown(String rawEventType) {
     return ParsedWebSocketEvent._(
       type: ParsedWebSocketEventType.unknown,
@@ -65,34 +81,41 @@ class WebSocketEventParser {
 
   ParsedWebSocketEvent parse(dynamic rawMessage) {
     final jsonData = jsonDecode(rawMessage as String) as Map<String, dynamic>;
-    final event = WebSocketEvent.fromJson(jsonData);
+    final eventType = jsonData['type'] as String?;
 
-    switch (event.type) {
+    if (eventType == null || eventType.isEmpty) {
+      return ParsedWebSocketEvent.error('Event missing type');
+    }
+
+    switch (eventType) {
       case 'message':
-        final messageData = event.data['data'] as Map<String, dynamic>?;
+        final messageData = jsonData['data'] as Map<String, dynamic>?;
         if (messageData == null) {
           return ParsedWebSocketEvent.error('Message payload missing data');
         }
         return ParsedWebSocketEvent.message(Message.fromJson(messageData));
 
       case 'typing':
-        final userId = event.data['user_id'] as String?;
+        final userId = jsonData['user_id'] as String?;
         if (userId == null) {
           return ParsedWebSocketEvent.error('Typing payload missing user_id');
         }
-        final isTyping = event.data['is_typing'] as bool? ?? false;
+        final isTyping = jsonData['is_typing'] as bool? ?? false;
         return ParsedWebSocketEvent.typing(userId, isTyping);
 
       case 'user_joined':
       case 'user_left':
-        return ParsedWebSocketEvent.presence(UserPresence.fromJson(event.data));
+        return ParsedWebSocketEvent.presence(UserPresence.fromJson(jsonData));
+
+      case 'reaction':
+        return ParsedWebSocketEvent.reaction(ReactionEvent.fromJson(jsonData));
 
       case 'error':
-        final errorMsg = event.data['message'] as String? ?? 'Unknown error';
+        final errorMsg = jsonData['message'] as String? ?? 'Unknown error';
         return ParsedWebSocketEvent.error(errorMsg);
 
       default:
-        return ParsedWebSocketEvent.unknown(event.type);
+        return ParsedWebSocketEvent.unknown(eventType);
     }
   }
 }

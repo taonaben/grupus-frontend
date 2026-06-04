@@ -7,6 +7,7 @@ class ChatConnectionStateNotifier
     extends StateNotifier<WebSocketConnectionState> {
   final ChatWebSocketService _webSocket;
   final Logger _logger = Logger();
+  late final ConnectionStateCallback _connectionListener;
 
   ChatConnectionStateNotifier(this._webSocket)
     : super(WebSocketConnectionState.disconnected) {
@@ -14,10 +15,11 @@ class ChatConnectionStateNotifier
   }
 
   void _setupListeners() {
-    _webSocket.onConnectionStateChanged((newState) {
+    _connectionListener = (newState) {
       state = newState;
       _logger.d('Connection state changed: ${newState.name}');
-    });
+    };
+    _webSocket.onConnectionStateChanged(_connectionListener);
   }
 
   /// Connect to a room
@@ -37,4 +39,10 @@ class ChatConnectionStateNotifier
 
   /// Check if connected
   bool get isConnected => state == WebSocketConnectionState.connected;
+
+  @override
+  void dispose() {
+    _webSocket.offConnectionStateChanged(_connectionListener);
+    super.dispose();
+  }
 }

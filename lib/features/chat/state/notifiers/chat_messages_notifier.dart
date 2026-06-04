@@ -7,19 +7,21 @@ import '../../services/websocket_services.dart';
 class ChatMessagesNotifier extends StateNotifier<List<Message>> {
   final ChatWebSocketService _webSocket;
   final Logger _logger = Logger();
+  late final MessageCallback _messageListener;
 
   ChatMessagesNotifier(this._webSocket) : super([]) {
     _setupListeners();
   }
 
   void _setupListeners() {
-    _webSocket.onMessage((message) {
+    _messageListener = (message) {
       if (state.any((existing) => existing.id == message.id)) {
         return;
       }
       state = [...state, message];
       _logger.d('Message added. Total messages: ${state.length}');
-    });
+    };
+    _webSocket.onMessage(_messageListener);
   }
 
   /// Adds a message locally (before it's sent)
@@ -71,5 +73,24 @@ class ChatMessagesNotifier extends StateNotifier<List<Message>> {
       _logger.e('Error sending alert: $e');
       rethrow;
     }
+  }
+
+  /// Sends a reaction event for a message
+  Future<void> sendReaction({
+    required String messageId,
+    required String emoji,
+  }) async {
+    try {
+      await _webSocket.sendReaction(messageId: messageId, emoji: emoji);
+    } catch (e) {
+      _logger.e('Error sending reaction: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  void dispose() {
+    _webSocket.offMessage(_messageListener);
+    super.dispose();
   }
 }

@@ -5,10 +5,12 @@ import 'package:logger/logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import '../models/message_model.dart';
+import 'websocket/websocket_event_payload_builder.dart';
 
 typedef MessageCallback = void Function(Message message);
 typedef TypingCallback = void Function(String userId, bool isTyping);
 typedef PresenceCallback = void Function(UserPresence presence);
+typedef ReactionCallback = void Function(ReactionEvent reaction);
 typedef ErrorCallback = void Function(String error);
 typedef ConnectionStateCallback = void Function(WebSocketConnectionState state);
 
@@ -36,6 +38,7 @@ class ChatWebSocketService {
       WebSocketConnectionState.disconnected;
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 5;
+  bool _manualDisconnect = false;
 
   Timer? _reconnectTimer;
 
@@ -46,8 +49,11 @@ class ChatWebSocketService {
   final List<MessageCallback> _messageCallbacks = [];
   final List<TypingCallback> _typingCallbacks = [];
   final List<PresenceCallback> _presenceCallbacks = [];
+  final List<ReactionCallback> _reactionCallbacks = [];
   final List<ErrorCallback> _errorCallbacks = [];
   final List<ConnectionStateCallback> _connectionStateCallbacks = [];
+  final WebSocketEventPayloadBuilder _payloadBuilder =
+      const WebSocketEventPayloadBuilder();
 
   ChatWebSocketService({required this.baseUrl, required this.token});
 
@@ -71,6 +77,7 @@ class ChatWebSocketService {
 
     _currentRoomId = roomId;
     _reconnectAttempts = 0;
+    _manualDisconnect = false;
     await _performConnect();
   }
 
@@ -78,6 +85,12 @@ class ChatWebSocketService {
   Future<void> _performConnect() async {
     try {
       _updateConnectionState(WebSocketConnectionState.connecting);
+
+      // Ensure previous subscription/channel are cleaned before reconnecting.
+      await _subscription?.cancel();
+      _subscription = null;
+      _channel?.sink.close(status.goingAway);
+      _channel = null;
 
       final wsUrl = _buildWebSocketUrl();
       logger.i('Connecting to WebSocket: $wsUrl');
@@ -100,7 +113,9 @@ class ChatWebSocketService {
     } catch (e) {
       logger.e('Connection error: $e');
       _updateConnectionState(WebSocketConnectionState.connectionFailed);
-      _scheduleReconnect();
+      if (!_manualDisconnect) {
+        _scheduleReconnect();
+      }
     }
   }
 
@@ -135,40 +150,54 @@ class ChatWebSocketService {
   void _handleMessage(dynamic message) {
     try {
       final jsonData = jsonDecode(message) as Map<String, dynamic>;
-      final event = WebSocketEvent.fromJson(jsonData);
+      final eventType = jsonData['type'] as String?;
 
-      logger.d('Received event: ${event.type}');
+      if (eventType == null || eventType.isEmpty) {
+        _broadcastError('Received event without type');
+        return;
+      }
 
-      switch (event.type) {
+      logger.d('Received event: $eventType');
+
+      switch (eventType) {
         case 'message':
-          final messageData = event.data['data'] as Map<String, dynamic>?;
+          final messageData = jsonData['data'] as Map<String, dynamic>?;
           if (messageData != null) {
             final chatMessage = Message.fromJson(messageData);
             _broadcastMessage(chatMessage);
+          } else {
+            _broadcastError('Message payload missing data');
           }
           break;
 
         case 'typing':
-          final userId = event.data['user_id'] as String?;
-          final isTyping = event.data['is_typing'] as bool? ?? false;
+          final userId = jsonData['user_id'] as String?;
+          final isTyping = jsonData['is_typing'] as bool? ?? false;
           if (userId != null) {
             _broadcastTyping(userId, isTyping);
+          } else {
+            _broadcastError('Typing payload missing user_id');
           }
           break;
 
         case 'user_joined':
         case 'user_left':
-          final presence = UserPresence.fromJson(event.data);
+          final presence = UserPresence.fromJson(jsonData);
           _broadcastPresence(presence);
           break;
 
+        case 'reaction':
+          final reaction = ReactionEvent.fromJson(jsonData);
+          _broadcastReaction(reaction);
+          break;
+
         case 'error':
-          final errorMsg = event.data['message'] as String?;
+          final errorMsg = jsonData['message'] as String?;
           _broadcastError(errorMsg ?? 'Unknown error');
           break;
 
         default:
-          logger.w('Unknown event type: ${event.type}');
+          logger.w('Unknown event type: $eventType');
       }
     } catch (e) {
       logger.e('Error parsing message: $e');
@@ -181,14 +210,18 @@ class ChatWebSocketService {
     logger.e('WebSocket error: $error');
     _broadcastError('Connection error: $error');
     _updateConnectionState(WebSocketConnectionState.connectionFailed);
-    _scheduleReconnect();
+    if (!_manualDisconnect) {
+      _scheduleReconnect();
+    }
   }
 
   /// Handles WebSocket closure
   void _handleDone() {
     logger.i('WebSocket closed');
     _updateConnectionState(WebSocketConnectionState.closed);
-    _scheduleReconnect();
+    if (!_manualDisconnect) {
+      _scheduleReconnect();
+    }
   }
 
   /// Schedules a reconnect attempt with exponential backoff
@@ -207,7 +240,7 @@ class ChatWebSocketService {
     final delay = Duration(seconds: delaySeconds);
 
     logger.i(
-      'Scheduling reconnect attempt ${_reconnectAttempts} in ${delay.inSeconds}s',
+      'Scheduling reconnect attempt $_reconnectAttempts in ${delay.inSeconds}s',
     );
 
     _reconnectTimer?.cancel();
@@ -223,19 +256,14 @@ class ChatWebSocketService {
     String content, {
     Map<String, dynamic>? metadata,
   }) async {
-    await _sendEvent(
-      type: 'message',
-      payload: {
-        'message_type': 'text',
-        'content': content,
-        'metadata': metadata ?? {},
-      },
+    await _sendPayload(
+      _payloadBuilder.buildTextMessage(content, metadata: metadata),
     );
   }
 
   /// Broadcasts typing status
   Future<void> broadcastTyping(bool isTyping) async {
-    await _sendEvent(type: 'typing', payload: {'is_typing': isTyping});
+    await _sendPayload(_payloadBuilder.buildTyping(isTyping));
   }
 
   /// Sends a reminder message
@@ -245,17 +273,13 @@ class ChatWebSocketService {
     String priority = 'medium',
     Map<String, dynamic>? metadata,
   }) async {
-    await _sendEvent(
-      type: 'message',
-      payload: {
-        'message_type': 'reminder',
-        'content': content,
-        'metadata': {
-          'due_date': dueDate.toIso8601String(),
-          'priority': priority,
-          if (metadata != null) ...metadata,
-        },
-      },
+    await _sendPayload(
+      _payloadBuilder.buildReminder(
+        content,
+        dueDate: dueDate,
+        priority: priority,
+        metadata: metadata,
+      ),
     );
   }
 
@@ -265,34 +289,41 @@ class ChatWebSocketService {
     String alertLevel = 'info',
     Map<String, dynamic>? metadata,
   }) async {
-    await _sendEvent(
-      type: 'message',
-      payload: {
-        'message_type': 'alert',
-        'content': content,
-        'metadata': {
-          'alert_level': alertLevel,
-          if (metadata != null) ...metadata,
-        },
-      },
+    await _sendPayload(
+      _payloadBuilder.buildAlert(
+        content,
+        alertLevel: alertLevel,
+        metadata: metadata,
+      ),
     );
   }
 
-  /// Internal method to send any event to the WebSocket
-  Future<void> _sendEvent({
-    required String type,
-    required Map<String, dynamic> payload,
+  /// Sends a reaction event for an existing message
+  Future<void> sendReaction({
+    required String messageId,
+    required String emoji,
   }) async {
+    final trimmedEmoji = emoji.trim();
+    if (trimmedEmoji.isEmpty || trimmedEmoji.length > 10) {
+      _broadcastError('Reaction emoji must be between 1 and 10 characters');
+      return;
+    }
+
+    await _sendPayload(
+      _payloadBuilder.buildReaction(messageId: messageId, emoji: trimmedEmoji),
+    );
+  }
+
+  Future<void> _sendPayload(Map<String, dynamic> event) async {
     if (!isConnected) {
-      logger.w('Not connected, cannot send event: $type');
+      logger.w('Not connected, cannot send event: ${event['type']}');
       _broadcastError('Not connected to chat');
       return;
     }
 
     try {
-      final event = {'type': type, ...payload};
       _channel?.sink.add(jsonEncode(event));
-      logger.d('Sent event: $type');
+      logger.d('Sent event: ${event['type']}');
     } catch (e) {
       logger.e('Error sending event: $e');
       _broadcastError('Failed to send message: $e');
@@ -304,7 +335,11 @@ class ChatWebSocketService {
     if (_connectionState != newState) {
       _connectionState = newState;
       for (final callback in _connectionStateCallbacks) {
-        callback(newState);
+        try {
+          callback(newState);
+        } catch (e) {
+          logger.e('Connection state callback failed: $e');
+        }
       }
     }
   }
@@ -312,50 +347,100 @@ class ChatWebSocketService {
   /// Broadcasts a message to all listeners
   void _broadcastMessage(Message message) {
     for (final callback in _messageCallbacks) {
-      callback(message);
+      try {
+        callback(message);
+      } catch (e) {
+        logger.e('Message callback failed: $e');
+      }
     }
   }
 
   /// Broadcasts typing event to all listeners
   void _broadcastTyping(String userId, bool isTyping) {
     for (final callback in _typingCallbacks) {
-      callback(userId, isTyping);
+      try {
+        callback(userId, isTyping);
+      } catch (e) {
+        logger.e('Typing callback failed: $e');
+      }
     }
   }
 
   /// Broadcasts presence event to all listeners
   void _broadcastPresence(UserPresence presence) {
     for (final callback in _presenceCallbacks) {
-      callback(presence);
+      try {
+        callback(presence);
+      } catch (e) {
+        logger.e('Presence callback failed: $e');
+      }
+    }
+  }
+
+  /// Broadcasts reaction event to all listeners
+  void _broadcastReaction(ReactionEvent reaction) {
+    for (final callback in _reactionCallbacks) {
+      try {
+        callback(reaction);
+      } catch (e) {
+        logger.e('Reaction callback failed: $e');
+      }
     }
   }
 
   /// Broadcasts error to all listeners
   void _broadcastError(String error) {
     for (final callback in _errorCallbacks) {
-      callback(error);
+      try {
+        callback(error);
+      } catch (e) {
+        logger.e('Error callback failed: $e');
+      }
     }
   }
 
   /// Register listeners
   void onMessage(MessageCallback callback) => _messageCallbacks.add(callback);
 
+  void offMessage(MessageCallback callback) =>
+      _messageCallbacks.remove(callback);
+
   void onTyping(TypingCallback callback) => _typingCallbacks.add(callback);
+
+  void offTyping(TypingCallback callback) => _typingCallbacks.remove(callback);
 
   void onPresence(PresenceCallback callback) =>
       _presenceCallbacks.add(callback);
 
+  void offPresence(PresenceCallback callback) =>
+      _presenceCallbacks.remove(callback);
+
+  void onReaction(ReactionCallback callback) =>
+      _reactionCallbacks.add(callback);
+
+  void offReaction(ReactionCallback callback) =>
+      _reactionCallbacks.remove(callback);
+
   void onError(ErrorCallback callback) => _errorCallbacks.add(callback);
+
+  void offError(ErrorCallback callback) => _errorCallbacks.remove(callback);
 
   void onConnectionStateChanged(ConnectionStateCallback callback) =>
       _connectionStateCallbacks.add(callback);
 
+  void offConnectionStateChanged(ConnectionStateCallback callback) =>
+      _connectionStateCallbacks.remove(callback);
+
   /// Disconnect from WebSocket
   void disconnect() {
     logger.i('Disconnecting WebSocket');
+    _manualDisconnect = true;
     _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _subscription?.cancel();
+    _subscription = null;
     _channel?.sink.close(status.goingAway);
+    _channel = null;
     _updateConnectionState(WebSocketConnectionState.disconnected);
     _currentRoomId = null;
   }
@@ -366,6 +451,7 @@ class ChatWebSocketService {
     _messageCallbacks.clear();
     _typingCallbacks.clear();
     _presenceCallbacks.clear();
+    _reactionCallbacks.clear();
     _errorCallbacks.clear();
     _connectionStateCallbacks.clear();
   }

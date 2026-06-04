@@ -12,6 +12,12 @@ enum MessageType {
   alert,
   @JsonValue('notification')
   notification,
+  @JsonValue('file')
+  file,
+  @JsonValue('mention')
+  mention,
+  @JsonValue('reaction')
+  reaction,
 }
 
 /// Represents a user who sends messages
@@ -27,7 +33,7 @@ class User {
 }
 
 /// Represents a single message in the chat
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class Message {
   final String id;
   final String content;
@@ -81,14 +87,39 @@ class Message {
 }
 
 /// Represents a WebSocket event from the server
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class WebSocketEvent {
   final String
   type; // 'message', 'typing', 'user_joined', 'user_left', 'reaction', 'error'
   @JsonKey(defaultValue: {})
   final Map<String, dynamic> data;
 
-  WebSocketEvent({required this.type, this.data = const {}});
+  @JsonKey(name: 'user_id')
+  final String? userId;
+
+  final String? username;
+
+  @JsonKey(name: 'is_typing')
+  final bool? isTyping;
+
+  @JsonKey(name: 'message_id')
+  final String? messageId;
+
+  final String? emoji;
+  final String? message;
+  final DateTime? timestamp;
+
+  WebSocketEvent({
+    required this.type,
+    this.data = const {},
+    this.userId,
+    this.username,
+    this.isTyping,
+    this.messageId,
+    this.emoji,
+    this.message,
+    this.timestamp,
+  });
 
   factory WebSocketEvent.fromJson(Map<String, dynamic> json) =>
       _$WebSocketEventFromJson(json);
@@ -97,7 +128,7 @@ class WebSocketEvent {
 }
 
 /// Represents typing indicator state
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class TypingEvent {
   final String type; // 'typing'
   final bool isTyping;
@@ -111,7 +142,7 @@ class TypingEvent {
 }
 
 /// Represents user presence in the chat
-@JsonSerializable()
+@JsonSerializable(fieldRename: FieldRename.snake)
 class UserPresence {
   final String userId;
   final String username;
@@ -129,4 +160,29 @@ class UserPresence {
       _$UserPresenceFromJson(json);
 
   Map<String, dynamic> toJson() => _$UserPresenceToJson(this);
+}
+
+/// Represents message reactions from chat users
+@JsonSerializable(fieldRename: FieldRename.snake)
+class ReactionEvent {
+  final String type; // 'reaction'
+  final String messageId;
+  final String userId;
+  final String username;
+  final String emoji;
+  final DateTime timestamp;
+
+  ReactionEvent({
+    required this.type,
+    required this.messageId,
+    required this.userId,
+    required this.username,
+    required this.emoji,
+    required this.timestamp,
+  });
+
+  factory ReactionEvent.fromJson(Map<String, dynamic> json) =>
+      _$ReactionEventFromJson(json);
+
+  Map<String, dynamic> toJson() => _$ReactionEventToJson(this);
 }

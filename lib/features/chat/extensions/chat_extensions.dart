@@ -89,6 +89,12 @@ extension MessageExtension on Message {
         return '⚠️ Alert';
       case MessageType.notification:
         return '🔔 Notification';
+      case MessageType.file:
+        return '📎 File';
+      case MessageType.mention:
+        return '@ Mention';
+      case MessageType.reaction:
+        return '😀 Reaction';
     }
   }
 
@@ -117,6 +123,12 @@ extension MessageTypeExtension on MessageType {
         return 'alert';
       case MessageType.notification:
         return 'notification';
+      case MessageType.file:
+        return 'file';
+      case MessageType.mention:
+        return 'mention';
+      case MessageType.reaction:
+        return 'reaction';
     }
   }
 
@@ -131,6 +143,12 @@ extension MessageTypeExtension on MessageType {
         return 'Alert';
       case MessageType.notification:
         return 'Notification';
+      case MessageType.file:
+        return 'File';
+      case MessageType.mention:
+        return 'Mention';
+      case MessageType.reaction:
+        return 'Reaction';
     }
   }
 
@@ -145,6 +163,12 @@ extension MessageTypeExtension on MessageType {
         return '⚠️';
       case MessageType.notification:
         return '🔔';
+      case MessageType.file:
+        return '📎';
+      case MessageType.mention:
+        return '@';
+      case MessageType.reaction:
+        return '😀';
     }
   }
 }

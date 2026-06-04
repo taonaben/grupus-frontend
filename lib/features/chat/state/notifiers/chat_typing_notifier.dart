@@ -7,13 +7,14 @@ import '../chat_types.dart';
 class ChatTypingNotifier extends StateNotifier<TypingUsersState> {
   final ChatWebSocketService _webSocket;
   final Logger _logger = Logger();
+  late final TypingCallback _typingListener;
 
   ChatTypingNotifier(this._webSocket) : super({}) {
     _setupListeners();
   }
 
   void _setupListeners() {
-    _webSocket.onTyping((userId, isTyping) {
+    _typingListener = (userId, isTyping) {
       if (isTyping) {
         state = {...state, userId: isTyping};
         _logger.d('User $userId is typing');
@@ -21,7 +22,8 @@ class ChatTypingNotifier extends StateNotifier<TypingUsersState> {
         state = {...state}..remove(userId);
         _logger.d('User $userId stopped typing');
       }
-    });
+    };
+    _webSocket.onTyping(_typingListener);
   }
 
   /// Broadcasts typing status to other users
@@ -39,4 +41,10 @@ class ChatTypingNotifier extends StateNotifier<TypingUsersState> {
 
   /// Check if any user is typing
   bool get anyUserTyping => typingUsers.isNotEmpty;
+
+  @override
+  void dispose() {
+    _webSocket.offTyping(_typingListener);
+    super.dispose();
+  }
 }
