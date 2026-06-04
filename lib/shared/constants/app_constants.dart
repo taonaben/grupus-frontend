@@ -1,3 +1,5 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// App-wide constants
 class AppConstants {
   // App Info
@@ -60,6 +62,37 @@ class AppConstants {
   static const String errorMessage = 'Something went wrong';
   static const String loadingMessage = 'Loading...';
 
-  //API Endpoints
-  static const String apiBaseUrl = 'http://192.168.1.167:8000';
+  // API Endpoints
+  // Priority: .env -> --dart-define -> default
+  static const String _apiBaseUrlFromDefine = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: '',
+  );
+  static String get apiBaseUrl {
+    final envValue = dotenv.env['API_BASE_URL']?.trim();
+    if (envValue != null && envValue.isNotEmpty) {
+      return envValue;
+    }
+    if (_apiBaseUrlFromDefine.isNotEmpty) {
+      return _apiBaseUrlFromDefine;
+    }
+    return 'http://10.0.2.2:8000';
+  }
+
+  // WebSocket Endpoint
+  // Priority: .env -> --dart-define -> default
+  static const String _wsBaseUrlFromDefine = String.fromEnvironment(
+    'WS_BASE_URL',
+    defaultValue: '',
+  );
+  static String get wsBaseUrl {
+    final envValue = dotenv.env['WS_BASE_URL']?.trim();
+    if (envValue != null && envValue.isNotEmpty) {
+      return envValue;
+    }
+    if (_wsBaseUrlFromDefine.isNotEmpty) {
+      return _wsBaseUrlFromDefine;
+    }
+    return 'ws://10.0.2.2:8000';
+  }
 }

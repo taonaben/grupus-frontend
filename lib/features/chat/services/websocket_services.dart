@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:logger/logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
@@ -27,8 +28,8 @@ class ChatWebSocketService {
   final String token; // JWT token for authentication
   final Logger logger = Logger();
 
-  late WebSocketChannel _channel;
-  late StreamSubscription<dynamic> _subscription;
+  WebSocketChannel? _channel;
+  StreamSubscription<dynamic>? _subscription;
 
   String? _currentRoomId;
   WebSocketConnectionState _connectionState =
@@ -36,7 +37,7 @@ class ChatWebSocketService {
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 5;
 
-  late Timer _reconnectTimer;
+  Timer? _reconnectTimer;
 
   /// Maximum delay between reconnection attempts
   static const int _maxReconnectDelay = 30;
@@ -78,13 +79,13 @@ class ChatWebSocketService {
     try {
       _updateConnectionState(WebSocketConnectionState.connecting);
 
-      final wsUrl = '$baseUrl/ws/chat/${_currentRoomId!}/?token=$token';
+      final wsUrl = _buildWebSocketUrl();
       logger.i('Connecting to WebSocket: $wsUrl');
 
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
 
       // Listen to the channel
-      _subscription = _channel.stream.listen(
+      _subscription = _channel!.stream.listen(
         _handleMessage,
         onError: _handleError,
         onDone: _handleDone,
@@ -98,6 +99,28 @@ class ChatWebSocketService {
       _updateConnectionState(WebSocketConnectionState.connectionFailed);
       _scheduleReconnect();
     }
+  }
+
+  /// Builds a valid WebSocket URL from the provided base URL.
+  /// Accepts ws/wss/http/https inputs and always returns ws or wss.
+  String _buildWebSocketUrl() {
+    final parsedBase = Uri.parse(baseUrl);
+    final wsScheme = parsedBase.scheme == 'https' ? 'wss' : 'ws';
+
+    final pathSegments = <String>[
+      ...parsedBase.pathSegments.where((segment) => segment.isNotEmpty),
+      'ws',
+      'chat',
+      _currentRoomId!,
+    ];
+
+    final wsUri = parsedBase.replace(
+      scheme: wsScheme,
+      pathSegments: pathSegments,
+      queryParameters: {'token': token},
+    );
+
+    return wsUri.toString();
   }
 
   /// Handles incoming messages from the WebSocket
@@ -169,13 +192,17 @@ class ChatWebSocketService {
     }
 
     _reconnectAttempts++;
-    final delaySeconds = (2 ^ _reconnectAttempts).clamp(3, 30);
+    final delaySeconds = math
+        .pow(2, _reconnectAttempts)
+        .toInt()
+        .clamp(3, _maxReconnectDelay);
     final delay = Duration(seconds: delaySeconds);
 
     logger.i(
       'Scheduling reconnect attempt ${_reconnectAttempts} in ${delay.inSeconds}s',
     );
 
+    _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () {
       if (_currentRoomId != null) {
         _performConnect();
@@ -256,7 +283,7 @@ class ChatWebSocketService {
 
     try {
       final event = {'type': type, ...payload};
-      _channel.sink.add(jsonEncode(event));
+      _channel?.sink.add(jsonEncode(event));
       logger.d('Sent event: $type');
     } catch (e) {
       logger.e('Error sending event: $e');
@@ -318,9 +345,9 @@ class ChatWebSocketService {
   /// Disconnect from WebSocket
   void disconnect() {
     logger.i('Disconnecting WebSocket');
-    _reconnectTimer.cancel();
-    _subscription.cancel();
-    _channel.sink.close(status.goingAway);
+    _reconnectTimer?.cancel();
+    _subscription?.cancel();
+    _channel?.sink.close(status.goingAway);
     _updateConnectionState(WebSocketConnectionState.disconnected);
     _currentRoomId = null;
   }

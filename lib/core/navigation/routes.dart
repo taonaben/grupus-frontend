@@ -12,6 +12,7 @@ import 'package:grupus/features/resources/views/resources_page.dart';
 import 'package:grupus/features/workspaces/views/create_workspace_page.dart';
 import 'package:grupus/features/workspaces/views/workspaces_main.dart';
 import 'package:grupus/features/profile/profile_tab.dart';
+import 'package:grupus/shared/constants/app_constants.dart';
 import 'nav_bar_model.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 
@@ -92,7 +93,7 @@ GoRouter createRouter({required String initialLocation}) {
               ChatScreenConfig(
                 roomId: 'default-room-id',
                 roomName: 'General Chat',
-                baseUrl: 'ws://localhost:8000',
+                baseUrl: AppConstants.wsBaseUrl,
                 token: 'your-jwt-token-here',
               );
           return ChatScreen(config: config);

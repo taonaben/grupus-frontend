@@ -5,9 +5,10 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:grupus/features/chat/services/websocket_services.dart';
+import 'package:grupus/shared/constants/app_constants.dart';
 
-// Hard-code for testing - replace with your actual values
-const String WEBSOCKET_BASE_URL = 'ws://localhost:8000';
+// Uses .env / --dart-define / fallback from AppConstants
+final String WEBSOCKET_BASE_URL = AppConstants.wsBaseUrl;
 const String JWT_TOKEN =
     'your_jwt_token_here'; // Replace with actual token from your auth provider
 
