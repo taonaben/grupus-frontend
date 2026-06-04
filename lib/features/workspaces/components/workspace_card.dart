@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:grupus/features/channels/state/channels_provider.dart';
 import 'package:grupus/features/chat/views/chat_screen.dart';
 import 'package:grupus/features/workspaces/models/workspace_model.dart';
 import 'package:grupus/features/workspaces/models/workspace_types/cohort_model.dart';
@@ -12,26 +13,52 @@ import 'package:grupus/shared/utils/logs.dart';
 import 'package:grupus/shared/utils/shared_prefs.dart';
 import 'package:grupus/shared/utils/string_methods.dart';
 
-class WorkspaceCard extends StatelessWidget {
+class WorkspaceCard extends ConsumerWidget {
   final WorkspaceModel workspace;
 
   const WorkspaceCard({super.key, required this.workspace});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onTap: () async {
-        String accessToken = await getSP("accessToken") ?? '';
+        final accessToken = await getSP("accessToken");
         if (accessToken.isEmpty) {
           DevLogs.logError("No access token found in shared preferences.");
           // Handle the case where the token is missing, e.g., show an error message or redirect to login
           return;
         }
+
+        final workspaceId = workspace.id;
+        if (workspaceId == null || workspaceId.isEmpty) {
+          DevLogs.logError('Workspace id is missing');
+          return;
+        }
+
+        final scope = ChannelScope(workspaceId: workspaceId);
+
+        final defaultChannel = await ref.read(
+          defaultChannelByScopeProvider(scope).future,
+        );
+
+        if (defaultChannel == null) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No channels found for workspace')),
+            );
+          }
+          return;
+        }
+
+        if (!context.mounted) {
+          return;
+        }
+
         context.pushNamed(
           'chat',
           extra: ChatScreenConfig(
-            roomId: workspace.id!,
-            roomName: workspace.name,
+            roomId: defaultChannel.id,
+            roomName: defaultChannel.name,
             baseUrl: AppConstants.apiBaseUrl,
             token: accessToken,
           ),
