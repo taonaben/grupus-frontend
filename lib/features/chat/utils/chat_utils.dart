@@ -162,42 +162,43 @@ ConversationMetrics:
 /// Extension on WidgetRef for easier chat access
 extension ChatUtilsRef on WidgetRef {
   /// Get current chat statistics
-  ChatStatistics getChatStats() {
-    final messages = watch(chatMessagesProvider);
+  ChatStatistics getChatStats(ChatRoomScope scope) {
+    final messages = watch(chatMessagesProvider(scope));
     return ChatUtils.getStatistics(messages);
   }
 
   /// Send a text message easily
-  Future<void> sendChatMessage(String content) {
-    return read(chatMessagesProvider.notifier).sendMessage(content);
+  Future<void> sendChatMessage(ChatRoomScope scope, String content) {
+    return read(chatMessagesProvider(scope).notifier).sendMessage(content);
   }
 
   /// Send a reminder easily
   Future<void> sendChatReminder(
+    ChatRoomScope scope,
     String content, {
     required DateTime dueDate,
     String priority = 'medium',
   }) {
     return read(
-      chatMessagesProvider.notifier,
+      chatMessagesProvider(scope).notifier,
     ).sendReminder(content, dueDate: dueDate, priority: priority);
   }
 
   /// Get all overdue reminders
-  List<Message> getOverdueReminders() {
-    final messages = watch(chatMessagesProvider);
+  List<Message> getOverdueReminders(ChatRoomScope scope) {
+    final messages = watch(chatMessagesProvider(scope));
     return ChatUtils.getOverdueReminders(messages);
   }
 
   /// Get upcoming reminders
-  List<Message> getUpcomingReminders({int daysAhead = 7}) {
-    final messages = watch(chatMessagesProvider);
+  List<Message> getUpcomingReminders(ChatRoomScope scope, {int daysAhead = 7}) {
+    final messages = watch(chatMessagesProvider(scope));
     return ChatUtils.getUpcomingReminders(messages, daysAhead: daysAhead);
   }
 
   /// Get conversation metrics
-  ConversationMetrics getMetrics() {
-    final messages = watch(chatMessagesProvider);
+  ConversationMetrics getMetrics(ChatRoomScope scope) {
+    final messages = watch(chatMessagesProvider(scope));
     return ChatUtils.getConversationMetrics(messages);
   }
 }
