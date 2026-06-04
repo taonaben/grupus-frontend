@@ -1,5 +1,4 @@
 export 'chat_types.dart';
-export 'chat_websocket_registry.dart';
 export 'chat_state.dart';
 
 export 'notifiers/chat_messages_notifier.dart';

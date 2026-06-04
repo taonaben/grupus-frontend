@@ -84,6 +84,9 @@ class ChatWebSocketService {
 
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
 
+      // Await the handshake — throws if the server rejects the upgrade (e.g. 401/403)
+      await _channel!.ready;
+
       // Listen to the channel
       _subscription = _channel!.stream.listen(
         _handleMessage,
@@ -112,10 +115,15 @@ class ChatWebSocketService {
       'ws',
       'chat',
       _currentRoomId!,
+      '',
     ];
 
-    final wsUri = parsedBase.replace(
+    // Construct from scratch to avoid Uri.replace() carrying over an empty
+    // fragment field, which serialises as a trailing '#' and breaks the upgrade.
+    final wsUri = Uri(
       scheme: wsScheme,
+      host: parsedBase.host,
+      port: parsedBase.port,
       pathSegments: pathSegments,
       queryParameters: {'token': token},
     );

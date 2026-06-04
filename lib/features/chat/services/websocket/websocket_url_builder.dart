@@ -14,10 +14,15 @@ class WebSocketUrlBuilder {
       'ws',
       'chat',
       roomId,
+      '',
     ];
 
-    final wsUri = parsedBase.replace(
+    // Construct from scratch to avoid Uri.replace() carrying over an empty
+    // fragment field, which serialises as a trailing '#' and breaks the upgrade.
+    final wsUri = Uri(
       scheme: wsScheme,
+      host: parsedBase.host,
+      port: parsedBase.port,
       pathSegments: pathSegments,
       queryParameters: {'token': token},
     );
