@@ -39,6 +39,7 @@ class ChatWebSocketService {
   int _reconnectAttempts = 0;
   static const int _maxReconnectAttempts = 5;
   bool _manualDisconnect = false;
+  bool _isDisposed = false;
 
   Timer? _reconnectTimer;
 
@@ -57,6 +58,18 @@ class ChatWebSocketService {
 
   ChatWebSocketService({required this.baseUrl, required this.token});
 
+  void _closeChannel(WebSocketChannel? channel) {
+    if (channel == null) {
+      return;
+    }
+
+    unawaited(
+      channel.sink.close(status.goingAway).catchError((Object error) {
+        logger.w('Ignoring WebSocket close error: $error');
+      }),
+    );
+  }
+
   /// Gets current connection state
   WebSocketConnectionState get connectionState => _connectionState;
 
@@ -69,6 +82,11 @@ class ChatWebSocketService {
 
   /// Connect to a specific room's WebSocket
   Future<void> connect(String roomId) async {
+    if (_isDisposed) {
+      logger.w('Cannot connect disposed WebSocket service');
+      return;
+    }
+
     if (_connectionState == WebSocketConnectionState.connecting ||
         _connectionState == WebSocketConnectionState.connected) {
       logger.w('Already connecting or connected');
@@ -83,25 +101,35 @@ class ChatWebSocketService {
 
   /// Internal method to perform the actual connection
   Future<void> _performConnect() async {
+    if (_isDisposed || _manualDisconnect) {
+      return;
+    }
+
     try {
       _updateConnectionState(WebSocketConnectionState.connecting);
 
       // Ensure previous subscription/channel are cleaned before reconnecting.
       await _subscription?.cancel();
       _subscription = null;
-      _channel?.sink.close(status.goingAway);
+      _closeChannel(_channel);
       _channel = null;
 
       final wsUrl = _buildWebSocketUrl();
       logger.i('Connecting to WebSocket: $wsUrl');
 
-      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      final channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      _channel = channel;
 
       // Await the handshake — throws if the server rejects the upgrade (e.g. 401/403)
-      await _channel!.ready;
+      await channel.ready;
+
+      if (_isDisposed || _manualDisconnect || _channel != channel) {
+        _closeChannel(channel);
+        return;
+      }
 
       // Listen to the channel
-      _subscription = _channel!.stream.listen(
+      _subscription = channel.stream.listen(
         _handleMessage,
         onError: _handleError,
         onDone: _handleDone,
@@ -111,6 +139,10 @@ class ChatWebSocketService {
       _reconnectAttempts = 0;
       logger.i('WebSocket connected successfully');
     } catch (e) {
+      if (_isDisposed || _manualDisconnect) {
+        return;
+      }
+
       logger.e('Connection error: $e');
       _updateConnectionState(WebSocketConnectionState.connectionFailed);
       if (!_manualDisconnect) {
@@ -148,6 +180,10 @@ class ChatWebSocketService {
 
   /// Handles incoming messages from the WebSocket
   void _handleMessage(dynamic message) {
+    if (_isDisposed) {
+      return;
+    }
+
     try {
       final jsonData = jsonDecode(message) as Map<String, dynamic>;
       final eventType = jsonData['type'] as String?;
@@ -207,6 +243,10 @@ class ChatWebSocketService {
 
   /// Handles WebSocket errors
   void _handleError(error) {
+    if (_isDisposed || _manualDisconnect) {
+      return;
+    }
+
     logger.e('WebSocket error: $error');
     _broadcastError('Connection error: $error');
     _updateConnectionState(WebSocketConnectionState.connectionFailed);
@@ -217,6 +257,10 @@ class ChatWebSocketService {
 
   /// Handles WebSocket closure
   void _handleDone() {
+    if (_isDisposed || _manualDisconnect) {
+      return;
+    }
+
     logger.i('WebSocket closed');
     _updateConnectionState(WebSocketConnectionState.closed);
     if (!_manualDisconnect) {
@@ -226,6 +270,10 @@ class ChatWebSocketService {
 
   /// Schedules a reconnect attempt with exponential backoff
   void _scheduleReconnect() {
+    if (_isDisposed || _manualDisconnect) {
+      return;
+    }
+
     if (_reconnectAttempts >= _maxReconnectAttempts) {
       logger.e('Max reconnection attempts reached');
       _updateConnectionState(WebSocketConnectionState.disconnected);
@@ -245,7 +293,7 @@ class ChatWebSocketService {
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () {
-      if (_currentRoomId != null) {
+      if (!_isDisposed && !_manualDisconnect && _currentRoomId != null) {
         _performConnect();
       }
     });
@@ -315,6 +363,11 @@ class ChatWebSocketService {
   }
 
   Future<void> _sendPayload(Map<String, dynamic> event) async {
+    if (_isDisposed) {
+      logger.w('Disposed WebSocket service cannot send event: ${event['type']}');
+      return;
+    }
+
     if (!isConnected) {
       logger.w('Not connected, cannot send event: ${event['type']}');
       _broadcastError('Not connected to chat');
@@ -332,6 +385,10 @@ class ChatWebSocketService {
 
   /// Updates connection state and broadcasts to all listeners
   void _updateConnectionState(WebSocketConnectionState newState) {
+    if (_isDisposed) {
+      return;
+    }
+
     if (_connectionState != newState) {
       _connectionState = newState;
       for (final callback in _connectionStateCallbacks) {
@@ -439,7 +496,7 @@ class ChatWebSocketService {
     _reconnectTimer = null;
     _subscription?.cancel();
     _subscription = null;
-    _channel?.sink.close(status.goingAway);
+    _closeChannel(_channel);
     _channel = null;
     _updateConnectionState(WebSocketConnectionState.disconnected);
     _currentRoomId = null;
@@ -447,6 +504,7 @@ class ChatWebSocketService {
 
   /// Dispose resources
   void dispose() {
+    _isDisposed = true;
     disconnect();
     _messageCallbacks.clear();
     _typingCallbacks.clear();
