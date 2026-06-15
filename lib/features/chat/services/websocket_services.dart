@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:logger/logger.dart';
+import 'package:grupus/shared/utils/logs.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import '../models/message_model.dart';
@@ -55,18 +56,37 @@ class ChatWebSocketService {
   final List<ConnectionStateCallback> _connectionStateCallbacks = [];
   final WebSocketEventPayloadBuilder _payloadBuilder =
       const WebSocketEventPayloadBuilder();
+  final String _debugId = DateTime.now().microsecondsSinceEpoch.toString();
 
   ChatWebSocketService({required this.baseUrl, required this.token});
 
+  void _trace(String message) {
+    DevLogs.logInfo('[ChatWS:$_debugId] $message');
+  }
+
+  void _warn(String message) {
+    DevLogs.logWarning('[ChatWS:$_debugId] $message');
+  }
+
+  void _errorLog(String message) {
+    DevLogs.logError('[ChatWS:$_debugId] $message');
+  }
+
   void _closeChannel(WebSocketChannel? channel) {
     if (channel == null) {
+      _trace('closeChannel skipped: channel is null');
       return;
     }
 
+    _trace('closeChannel start');
     unawaited(
-      channel.sink.close(status.goingAway).catchError((Object error) {
-        logger.w('Ignoring WebSocket close error: $error');
-      }),
+      channel.sink
+          .close(status.goingAway)
+          .then((_) => _trace('closeChannel complete'))
+          .catchError((Object error, StackTrace stackTrace) {
+            _errorLog('closeChannel error: $error');
+            _errorLog('closeChannel stack: $stackTrace');
+          }),
     );
   }
 
@@ -82,14 +102,17 @@ class ChatWebSocketService {
 
   /// Connect to a specific room's WebSocket
   Future<void> connect(String roomId) async {
+    _trace(
+      'connect requested room=$roomId state=${_connectionState.name} disposed=$_isDisposed manual=$_manualDisconnect',
+    );
     if (_isDisposed) {
-      logger.w('Cannot connect disposed WebSocket service');
+      _warn('connect ignored: service already disposed');
       return;
     }
 
     if (_connectionState == WebSocketConnectionState.connecting ||
         _connectionState == WebSocketConnectionState.connected) {
-      logger.w('Already connecting or connected');
+      _warn('connect ignored: already ${_connectionState.name}');
       return;
     }
 
@@ -101,7 +124,11 @@ class ChatWebSocketService {
 
   /// Internal method to perform the actual connection
   Future<void> _performConnect() async {
+    _trace(
+      'performConnect enter room=$_currentRoomId disposed=$_isDisposed manual=$_manualDisconnect',
+    );
     if (_isDisposed || _manualDisconnect) {
+      _trace('performConnect exit early');
       return;
     }
 
@@ -109,26 +136,37 @@ class ChatWebSocketService {
       _updateConnectionState(WebSocketConnectionState.connecting);
 
       // Ensure previous subscription/channel are cleaned before reconnecting.
+      _trace('performConnect cleanup previous subscription/channel');
       await _subscription?.cancel();
+      _trace('performConnect previous subscription cancelled');
       _subscription = null;
       _closeChannel(_channel);
       _channel = null;
 
       final wsUrl = _buildWebSocketUrl();
-      logger.i('Connecting to WebSocket: $wsUrl');
+      final redactedWsUrl = Uri.parse(wsUrl).replace(
+        queryParameters: {'token': '<redacted>'},
+      );
+      _trace('connecting to WebSocket: $redactedWsUrl');
 
       final channel = WebSocketChannel.connect(Uri.parse(wsUrl));
       _channel = channel;
 
       // Await the handshake — throws if the server rejects the upgrade (e.g. 401/403)
+      _trace('awaiting channel.ready');
       await channel.ready;
+      _trace('channel.ready completed');
 
       if (_isDisposed || _manualDisconnect || _channel != channel) {
+        _warn(
+          'ready completed after stale/disposed state: disposed=$_isDisposed manual=$_manualDisconnect stale=${_channel != channel}',
+        );
         _closeChannel(channel);
         return;
       }
 
       // Listen to the channel
+      _trace('attaching stream listener');
       _subscription = channel.stream.listen(
         _handleMessage,
         onError: _handleError,
@@ -137,13 +175,14 @@ class ChatWebSocketService {
 
       _updateConnectionState(WebSocketConnectionState.connected);
       _reconnectAttempts = 0;
-      logger.i('WebSocket connected successfully');
+      _trace('connected successfully');
     } catch (e) {
       if (_isDisposed || _manualDisconnect) {
+        _warn('performConnect caught error after teardown: $e');
         return;
       }
 
-      logger.e('Connection error: $e');
+      _errorLog('connection error: $e');
       _updateConnectionState(WebSocketConnectionState.connectionFailed);
       if (!_manualDisconnect) {
         _scheduleReconnect();
@@ -180,6 +219,7 @@ class ChatWebSocketService {
 
   /// Handles incoming messages from the WebSocket
   void _handleMessage(dynamic message) {
+    _trace('handleMessage called disposed=$_isDisposed');
     if (_isDisposed) {
       return;
     }
@@ -193,7 +233,7 @@ class ChatWebSocketService {
         return;
       }
 
-      logger.d('Received event: $eventType');
+      _trace('received event: $eventType');
 
       switch (eventType) {
         case 'message':
@@ -236,18 +276,20 @@ class ChatWebSocketService {
           logger.w('Unknown event type: $eventType');
       }
     } catch (e) {
-      logger.e('Error parsing message: $e');
+      _errorLog('error parsing message: $e');
       _broadcastError('Failed to parse message: $e');
     }
   }
 
   /// Handles WebSocket errors
   void _handleError(error) {
+    _errorLog(
+      'handleError called error=$error disposed=$_isDisposed manual=$_manualDisconnect',
+    );
     if (_isDisposed || _manualDisconnect) {
       return;
     }
 
-    logger.e('WebSocket error: $error');
     _broadcastError('Connection error: $error');
     _updateConnectionState(WebSocketConnectionState.connectionFailed);
     if (!_manualDisconnect) {
@@ -257,11 +299,12 @@ class ChatWebSocketService {
 
   /// Handles WebSocket closure
   void _handleDone() {
+    _trace('handleDone called disposed=$_isDisposed manual=$_manualDisconnect');
     if (_isDisposed || _manualDisconnect) {
       return;
     }
 
-    logger.i('WebSocket closed');
+    _trace('WebSocket closed by stream');
     _updateConnectionState(WebSocketConnectionState.closed);
     if (!_manualDisconnect) {
       _scheduleReconnect();
@@ -270,12 +313,15 @@ class ChatWebSocketService {
 
   /// Schedules a reconnect attempt with exponential backoff
   void _scheduleReconnect() {
+    _trace(
+      'scheduleReconnect called attempts=$_reconnectAttempts disposed=$_isDisposed manual=$_manualDisconnect',
+    );
     if (_isDisposed || _manualDisconnect) {
       return;
     }
 
     if (_reconnectAttempts >= _maxReconnectAttempts) {
-      logger.e('Max reconnection attempts reached');
+      _errorLog('max reconnection attempts reached');
       _updateConnectionState(WebSocketConnectionState.disconnected);
       return;
     }
@@ -287,14 +333,19 @@ class ChatWebSocketService {
         .clamp(3, _maxReconnectDelay);
     final delay = Duration(seconds: delaySeconds);
 
-    logger.i(
+    _trace(
       'Scheduling reconnect attempt $_reconnectAttempts in ${delay.inSeconds}s',
     );
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(delay, () {
       if (!_isDisposed && !_manualDisconnect && _currentRoomId != null) {
+        _trace('reconnect timer fired');
         _performConnect();
+      } else {
+        _trace(
+          'reconnect timer ignored disposed=$_isDisposed manual=$_manualDisconnect room=$_currentRoomId',
+        );
       }
     });
   }
@@ -363,28 +414,34 @@ class ChatWebSocketService {
   }
 
   Future<void> _sendPayload(Map<String, dynamic> event) async {
+    _trace(
+      'sendPayload type=${event['type']} state=${_connectionState.name} disposed=$_isDisposed',
+    );
     if (_isDisposed) {
-      logger.w('Disposed WebSocket service cannot send event: ${event['type']}');
+      _warn('sendPayload ignored: service disposed');
       return;
     }
 
     if (!isConnected) {
-      logger.w('Not connected, cannot send event: ${event['type']}');
+      _warn('sendPayload ignored: not connected');
       _broadcastError('Not connected to chat');
       return;
     }
 
     try {
       _channel?.sink.add(jsonEncode(event));
-      logger.d('Sent event: ${event['type']}');
+      _trace('sent event: ${event['type']}');
     } catch (e) {
-      logger.e('Error sending event: $e');
+      _errorLog('error sending event: $e');
       _broadcastError('Failed to send message: $e');
     }
   }
 
   /// Updates connection state and broadcasts to all listeners
   void _updateConnectionState(WebSocketConnectionState newState) {
+    _trace(
+      'updateConnectionState ${_connectionState.name} -> ${newState.name} disposed=$_isDisposed callbacks=${_connectionStateCallbacks.length}',
+    );
     if (_isDisposed) {
       return;
     }
@@ -395,7 +452,7 @@ class ChatWebSocketService {
         try {
           callback(newState);
         } catch (e) {
-          logger.e('Connection state callback failed: $e');
+          _errorLog('connection state callback failed: $e');
         }
       }
     }
@@ -447,11 +504,12 @@ class ChatWebSocketService {
 
   /// Broadcasts error to all listeners
   void _broadcastError(String error) {
+    _errorLog('broadcastError callbacks=${_errorCallbacks.length}: $error');
     for (final callback in _errorCallbacks) {
       try {
         callback(error);
       } catch (e) {
-        logger.e('Error callback failed: $e');
+        _errorLog('error callback failed: $e');
       }
     }
   }
@@ -490,20 +548,39 @@ class ChatWebSocketService {
 
   /// Disconnect from WebSocket
   void disconnect() {
-    logger.i('Disconnecting WebSocket');
+    _trace(
+      'disconnect start state=${_connectionState.name} room=$_currentRoomId disposed=$_isDisposed manual=$_manualDisconnect',
+    );
     _manualDisconnect = true;
     _reconnectTimer?.cancel();
+    _trace('disconnect reconnect timer cancelled');
     _reconnectTimer = null;
-    _subscription?.cancel();
+    final subscription = _subscription;
     _subscription = null;
+    if (subscription != null) {
+      _trace('disconnect cancelling subscription');
+      unawaited(
+        subscription
+            .cancel()
+            .then((_) => _trace('disconnect subscription cancel complete'))
+            .catchError((Object error, StackTrace stackTrace) {
+              _errorLog('disconnect subscription cancel error: $error');
+              _errorLog('disconnect subscription cancel stack: $stackTrace');
+            }),
+      );
+    } else {
+      _trace('disconnect no subscription to cancel');
+    }
     _closeChannel(_channel);
     _channel = null;
     _updateConnectionState(WebSocketConnectionState.disconnected);
     _currentRoomId = null;
+    _trace('disconnect complete');
   }
 
   /// Dispose resources
   void dispose() {
+    _trace('dispose start');
     _isDisposed = true;
     disconnect();
     _messageCallbacks.clear();
@@ -512,5 +589,6 @@ class ChatWebSocketService {
     _reactionCallbacks.clear();
     _errorCallbacks.clear();
     _connectionStateCallbacks.clear();
+    _trace('dispose callbacks cleared');
   }
 }

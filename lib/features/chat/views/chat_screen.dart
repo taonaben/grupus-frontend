@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:grupus/features/users/state/user_provider.dart';
 import 'package:grupus/shared/components/chat/message_bar.dart';
 import 'package:grupus/shared/components/custom_snackbar.dart';
+import 'package:grupus/shared/utils/logs.dart';
 import 'package:logger/logger.dart';
 import '../components/chat_disconnected_input_bar.dart';
 import '../components/chat_error_banner.dart';
@@ -49,6 +50,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    DevLogs.logInfo(
+      '[ChatScreen:${widget.config.roomId}] initState roomName=${widget.config.roomName}',
+    );
     _scrollController = ScrollController();
     _roomScope = ChatRoomScope(
       roomId: widget.config.roomId,
@@ -57,6 +61,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      DevLogs.logInfo(
+        '[ChatScreen:${widget.config.roomId}] postFrame connect callback mounted=$mounted',
+      );
       if (!mounted) {
         return;
       }
@@ -68,9 +75,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
+    DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] dispose start');
     _scrollTimer?.cancel();
+    DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] scroll timer cancelled');
     _scrollController.dispose();
+    DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] scroll controller disposed');
     super.dispose();
+    DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] dispose complete');
   }
 
   /// Handle message sending
@@ -78,6 +89,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     if (message.trim().isEmpty) return;
 
     try {
+      DevLogs.logInfo(
+        '[ChatScreen:${widget.config.roomId}] send message requested length=${message.trim().length}',
+      );
       final userFromProvider = ref.read(currentUserProvider).valueOrNull;
       if (userFromProvider == null) {
         CustomSnackbar(
@@ -137,7 +151,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// Scroll to bottom of message list
   void _scrollToBottom() {
     _scrollTimer?.cancel();
+    DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] schedule scroll to bottom');
     _scrollTimer = Timer(const Duration(milliseconds: 100), () {
+      DevLogs.logInfo(
+        '[ChatScreen:${widget.config.roomId}] scroll timer fired mounted=$mounted hasClients=${_scrollController.hasClients}',
+      );
       if (mounted && _scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,

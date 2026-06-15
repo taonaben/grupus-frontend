@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:grupus/shared/utils/logs.dart';
 
 import '../../models/message_model.dart';
 import '../../services/websocket_services.dart';
@@ -41,7 +42,11 @@ final chatWebSocketServiceProvider = Provider.autoDispose
         token: scope.token,
       );
 
-      ref.onDispose(service.dispose);
+      DevLogs.logInfo('[ChatProvider:${scope.roomId}] WebSocket service created');
+      ref.onDispose(() {
+        DevLogs.logInfo('[ChatProvider:${scope.roomId}] WebSocket provider dispose');
+        service.dispose();
+      });
       return service;
     });
 
