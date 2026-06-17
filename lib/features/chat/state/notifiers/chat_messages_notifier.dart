@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 
+import '../../models/message_metadata_keys.dart';
 import '../../models/message_model.dart';
 import '../../services/websocket_services.dart';
 
@@ -18,6 +19,26 @@ class ChatMessagesNotifier extends StateNotifier<List<Message>> {
       if (state.any((existing) => existing.id == message.id)) {
         return;
       }
+
+      final clientMessageId = _clientMessageIdFor(message);
+      if (clientMessageId != null) {
+        final pendingIndex = state.indexWhere(
+          (existing) =>
+              existing.id != message.id &&
+              _clientMessageIdFor(existing) == clientMessageId,
+        );
+
+        if (pendingIndex != -1) {
+          final updatedMessages = [...state];
+          updatedMessages[pendingIndex] = message;
+          state = updatedMessages;
+          _logger.d(
+            'Pending message reconciled. Total messages: ${state.length}',
+          );
+          return;
+        }
+      }
+
       state = [...state, message];
       _logger.d('Message added. Total messages: ${state.length}');
     };
@@ -38,9 +59,12 @@ class ChatMessagesNotifier extends StateNotifier<List<Message>> {
   }
 
   /// Sends a text message
-  Future<void> sendMessage(String content) async {
+  Future<void> sendMessage(
+    String content, {
+    Map<String, dynamic>? metadata,
+  }) async {
     try {
-      await _webSocket.sendMessage(content);
+      await _webSocket.sendMessage(content, metadata: metadata);
     } catch (e) {
       _logger.e('Error sending message: $e');
       rethrow;
@@ -92,5 +116,13 @@ class ChatMessagesNotifier extends StateNotifier<List<Message>> {
   void dispose() {
     _webSocket.offMessage(_messageListener);
     super.dispose();
+  }
+
+  String? _clientMessageIdFor(Message message) {
+    final clientMessageId =
+        message.metadata[MessageMetadataKeys.clientMessageId];
+    return clientMessageId is String && clientMessageId.isNotEmpty
+        ? clientMessageId
+        : null;
   }
 }

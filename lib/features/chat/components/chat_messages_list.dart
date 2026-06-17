@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:grupus/features/users/state/user_provider.dart';
 
 import '../models/message_model.dart';
 import 'chat_empty_state.dart';
 import 'chat_message_item.dart';
 import 'chat_typing_section.dart';
 
-class ChatMessagesList extends StatelessWidget {
+class ChatMessagesList extends ConsumerWidget {
   final List<Message> messages;
   final List<String> typingUsers;
   final bool isConnected;
@@ -20,10 +22,12 @@ class ChatMessagesList extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (messages.isEmpty) {
       return ChatEmptyState(isConnected: isConnected);
     }
+
+    final currentUserId = ref.watch(currentUserProvider).valueOrNull?.id;
 
     return ListView.builder(
       controller: scrollController,
@@ -34,7 +38,10 @@ class ChatMessagesList extends StatelessWidget {
         }
 
         final message = messages[index];
-        final isSentByMe = message.sender.username == 'Me';
+        final isSentByMe =
+            currentUserId != null &&
+            currentUserId.isNotEmpty &&
+            message.sender.id == currentUserId;
 
         return ChatMessageItem(message: message, isSentByMe: isSentByMe);
       },

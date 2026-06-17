@@ -4,12 +4,19 @@ import 'package:grupus/shared/constants/app_constants.dart';
 
 class ChatMessageBar extends StatelessWidget {
   final Function(String) onSend;
-  const ChatMessageBar({super.key, required this.onSend});
+  final ValueChanged<String>? onTextChanged;
+
+  const ChatMessageBar({
+    super.key,
+    required this.onSend,
+    this.onTextChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MessageBar(
       onSend: onSend,
+      onTextChanged: onTextChanged,
       actions: [
         IconButton(
           icon: const Icon(Icons.attach_file),

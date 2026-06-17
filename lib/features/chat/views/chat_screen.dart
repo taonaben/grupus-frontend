@@ -7,10 +7,13 @@ import 'package:grupus/shared/components/chat/message_bar.dart';
 import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/utils/logs.dart';
 import 'package:logger/logger.dart';
+import 'package:uuid/uuid.dart';
+
 import '../components/chat_disconnected_input_bar.dart';
 import '../components/chat_error_banner.dart';
 import '../components/chat_header.dart';
 import '../components/chat_messages_list.dart';
+import '../models/message_metadata_keys.dart';
 import '../models/message_model.dart';
 import '../state/chat_provider.dart';
 
@@ -42,9 +45,12 @@ class ChatScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatScreenState extends ConsumerState<ChatScreen> {
+  static const Duration _typingTimeout = Duration(seconds: 2);
+
   late final ScrollController _scrollController;
   late final ChatRoomScope _roomScope;
   Timer? _scrollTimer;
+  Timer? _typingTimer;
   bool _isTyping = false;
 
   @override
@@ -78,6 +84,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] dispose start');
     _scrollTimer?.cancel();
     DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] scroll timer cancelled');
+    _typingTimer?.cancel();
+    _setTyping(false);
     _scrollController.dispose();
     DevLogs.logInfo('[ChatScreen:${widget.config.roomId}] scroll controller disposed');
     super.dispose();
@@ -101,8 +109,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         return;
       }
 
+      final clientMessageId = Uuid().v4();
+      final metadata = <String, dynamic>{
+        MessageMetadataKeys.clientMessageId: clientMessageId,
+      };
+
       final localMessage = Message(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: clientMessageId,
         content: message.trim(),
         messageType: MessageType.text,
         sender: User(
@@ -111,6 +124,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ),
         channelId: widget.config.roomId,
         createdAt: DateTime.now(),
+        metadata: metadata,
       );
 
       // Add to local state immediately for better UX
@@ -121,7 +135,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       // Send actual message
       ref
           .read(chatMessagesProvider(_roomScope).notifier)
-          .sendMessage(message.trim());
+          .sendMessage(message.trim(), metadata: metadata);
+      _typingTimer?.cancel();
       _setTyping(false);
 
       // Scroll to latest message
@@ -146,6 +161,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       logger.e('Error setting typing: $e');
     }
+  }
+
+  void _handleMessageTextChanged(String text) {
+    _typingTimer?.cancel();
+
+    if (text.trim().isEmpty) {
+      _setTyping(false);
+      return;
+    }
+
+    _setTyping(true);
+    _typingTimer = Timer(_typingTimeout, () {
+      _setTyping(false);
+    });
   }
 
   /// Scroll to bottom of message list
@@ -211,6 +240,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// Build message input bar
   Widget _buildMessageInputBar() {
-    return ChatMessageBar(onSend: _handleSendMessage);
+    return ChatMessageBar(
+      onSend: _handleSendMessage,
+      onTextChanged: _handleMessageTextChanged,
+    );
   }
 }
