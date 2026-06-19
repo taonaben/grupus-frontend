@@ -7245,8 +7245,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'sync_state_scope_unique',
     'CREATE UNIQUE INDEX sync_state_scope_unique ON sync_state (scope_type, scope_id)',
   );
+  late final ChatMessagesDao chatMessagesDao = ChatMessagesDao(
+    this as AppDatabase,
+  );
   late final InstallationIdentityDao installationIdentityDao =
       InstallationIdentityDao(this as AppDatabase);
+  late final SyncOutboxDao syncOutboxDao = SyncOutboxDao(this as AppDatabase);
   late final SyncStateDao syncStateDao = SyncStateDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -10679,8 +10683,14 @@ class $AppDatabaseManager {
       $$SyncErrorsTableTableManager(_db, _db.syncErrors);
 }
 
+mixin _$ChatMessagesDaoMixin on DatabaseAccessor<AppDatabase> {
+  $MessagesTable get messages => attachedDatabase.messages;
+}
 mixin _$InstallationIdentityDaoMixin on DatabaseAccessor<AppDatabase> {
   $AppSettingsTable get appSettings => attachedDatabase.appSettings;
+}
+mixin _$SyncOutboxDaoMixin on DatabaseAccessor<AppDatabase> {
+  $SyncOutboxTable get syncOutbox => attachedDatabase.syncOutbox;
 }
 mixin _$SyncStateDaoMixin on DatabaseAccessor<AppDatabase> {
   $SyncStateTable get syncState => attachedDatabase.syncState;

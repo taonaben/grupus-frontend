@@ -7,14 +7,10 @@ import 'package:grupus/shared/components/chat/message_bar.dart';
 import 'package:grupus/shared/components/custom_snackbar.dart';
 import 'package:grupus/shared/utils/logs.dart';
 import 'package:logger/logger.dart';
-import 'package:uuid/uuid.dart';
 
-import '../components/chat_disconnected_input_bar.dart';
 import '../components/chat_error_banner.dart';
 import '../components/chat_header.dart';
 import '../components/chat_messages_list.dart';
-import '../models/message_metadata_keys.dart';
-import '../models/message_model.dart';
 import '../state/chat_provider.dart';
 
 final logger = Logger();
@@ -94,6 +90,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// Handle message sending
   void _handleSendMessage(String message) {
+    unawaited(_sendMessage(message));
+  }
+
+  Future<void> _sendMessage(String message) async {
     if (message.trim().isEmpty) return;
 
     try {
@@ -109,33 +109,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         return;
       }
 
-      final clientMessageId = Uuid().v4();
-      final metadata = <String, dynamic>{
-        MessageMetadataKeys.clientMessageId: clientMessageId,
-      };
+      await ref
+          .read(chatMessageSendServiceProvider)
+          .sendTextMessage(
+            content: message.trim(),
+            channelId: widget.config.roomId,
+            senderId: userFromProvider.id ?? '',
+            senderUsername: userFromProvider.username,
+          );
 
-      final localMessage = Message(
-        id: clientMessageId,
-        content: message.trim(),
-        messageType: MessageType.text,
-        sender: User(
-          id: userFromProvider.id ?? '',
-          username: userFromProvider.username,
-        ),
-        channelId: widget.config.roomId,
-        createdAt: DateTime.now(),
-        metadata: metadata,
-      );
-
-      // Add to local state immediately for better UX
-      ref
-          .read(chatMessagesProvider(_roomScope).notifier)
-          .addLocalMessage(localMessage);
-
-      // Send actual message
-      ref
-          .read(chatMessagesProvider(_roomScope).notifier)
-          .sendMessage(message.trim(), metadata: metadata);
+      await ref
+          .read(chatOutboxFlusherProvider(_roomScope))
+          .flushPendingIfConnected();
       _typingTimer?.cancel();
       _setTyping(false);
 
@@ -143,14 +128,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _scrollToBottom();
     } catch (e) {
       logger.e('Error sending message: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to send message: $e')));
+      }
     }
   }
 
   /// Handle typing indicator
   void _setTyping(bool isTyping) {
+    if (!ref.read(chatStateProvider(_roomScope)).isConnected) {
+      _isTyping = false;
+      return;
+    }
     if (_isTyping == isTyping) return;
     _isTyping = isTyping;
 
@@ -229,10 +220,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               scrollController: _scrollController,
             ),
           ),
-          if (isConnected)
-            _buildMessageInputBar()
-          else
-            const ChatDisconnectedInputBar(),
+          _buildMessageInputBar(),
         ],
       ),
     );

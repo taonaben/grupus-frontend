@@ -14,7 +14,9 @@ import 'tables/users_table.dart';
 import 'tables/workspaces_table.dart';
 
 part 'app_database.g.dart';
+part 'daos/chat_messages_dao.dart';
 part 'daos/installation_identity_dao.dart';
+part 'daos/sync_outbox_dao.dart';
 part 'daos/sync_state_dao.dart';
 
 @DriftDatabase(
@@ -29,7 +31,12 @@ part 'daos/sync_state_dao.dart';
     SyncState,
     SyncErrors,
   ],
-  daos: [InstallationIdentityDao, SyncStateDao],
+  daos: [
+    ChatMessagesDao,
+    InstallationIdentityDao,
+    SyncOutboxDao,
+    SyncStateDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());

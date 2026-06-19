@@ -1,4 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:grupus/core/database/database_provider.dart';
+import 'package:grupus/features/chat/data/chat_message_send_service.dart';
+import 'package:grupus/features/chat/data/chat_messages_repository.dart';
+import 'package:grupus/features/chat/data/chat_outbox_flusher.dart';
+import 'package:grupus/features/chat/data/chat_socket_message_ingestion.dart';
 import 'package:grupus/shared/utils/logs.dart';
 
 import '../../models/message_model.dart';
@@ -7,7 +12,6 @@ import '../chat_state.dart';
 import '../chat_types.dart';
 import '../notifiers/chat_connection_state_notifier.dart';
 import '../notifiers/chat_error_notifier.dart';
-import '../notifiers/chat_messages_notifier.dart';
 import '../notifiers/chat_room_users_notifier.dart';
 import '../notifiers/chat_typing_notifier.dart';
 
@@ -50,11 +54,47 @@ final chatWebSocketServiceProvider = Provider.autoDispose
       return service;
     });
 
+final chatMessagesRepositoryProvider = Provider<ChatMessagesRepository>((ref) {
+  final database = ref.watch(appDatabaseProvider);
+  return ChatMessagesRepository(dao: database.chatMessagesDao);
+});
+
+final chatMessageSendServiceProvider = Provider<ChatMessageSendService>((ref) {
+  final database = ref.watch(appDatabaseProvider);
+  return ChatMessageSendService(database: database);
+});
+
 /// Manages the list of messages in the current chat
-final chatMessagesProvider = StateNotifierProvider.autoDispose
-    .family<ChatMessagesNotifier, List<Message>, ChatRoomScope>((ref, scope) {
+final chatMessagesProvider = StreamProvider.autoDispose
+    .family<List<Message>, ChatRoomScope>((ref, scope) {
+      final repository = ref.watch(chatMessagesRepositoryProvider);
+      return repository.watchMessages(scope.roomId);
+    });
+
+final chatSocketMessageIngestionProvider = Provider.autoDispose
+    .family<ChatSocketMessageIngestion, ChatRoomScope>((ref, scope) {
       final webSocket = ref.watch(chatWebSocketServiceProvider(scope));
-      return ChatMessagesNotifier(webSocket);
+      final repository = ref.watch(chatMessagesRepositoryProvider);
+      final ingestion = ChatSocketMessageIngestion(
+        webSocket: webSocket,
+        repository: repository,
+        roomId: scope.roomId,
+      );
+      ref.onDispose(ingestion.dispose);
+      return ingestion;
+    });
+
+final chatOutboxFlusherProvider = Provider.autoDispose
+    .family<ChatOutboxFlusher, ChatRoomScope>((ref, scope) {
+      final database = ref.watch(appDatabaseProvider);
+      final webSocket = ref.watch(chatWebSocketServiceProvider(scope));
+      final flusher = ChatOutboxFlusher(
+        outboxDao: database.syncOutboxDao,
+        webSocket: webSocket,
+        roomId: scope.roomId,
+      );
+      ref.onDispose(flusher.dispose);
+      return flusher;
     });
 
 /// Manages typing indicators for other users
@@ -91,7 +131,9 @@ final chatErrorProvider = StateNotifierProvider.autoDispose
 /// Composite provider for quick access to all chat state
 final chatStateProvider = Provider.autoDispose.family<ChatState, ChatRoomScope>(
   (ref, scope) {
-    final messages = ref.watch(chatMessagesProvider(scope));
+    ref.watch(chatSocketMessageIngestionProvider(scope));
+    ref.watch(chatOutboxFlusherProvider(scope));
+    final messages = ref.watch(chatMessagesProvider(scope)).valueOrNull ?? const <Message>[];
     final typingUsers = ref.watch(chatTypingUsersProvider(scope));
     final roomUsers = ref.watch(chatRoomUsersProvider(scope));
     final connectionState = ref.watch(chatConnectionStateProvider(scope));

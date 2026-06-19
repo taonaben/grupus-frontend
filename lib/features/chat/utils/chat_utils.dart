@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:grupus/features/users/state/user_provider.dart';
 import 'package:intl/intl.dart';
 import '../models/message_model.dart';
 import '../state/chat_provider.dart';
@@ -163,13 +164,24 @@ ConversationMetrics:
 extension ChatUtilsRef on WidgetRef {
   /// Get current chat statistics
   ChatStatistics getChatStats(ChatRoomScope scope) {
-    final messages = watch(chatMessagesProvider(scope));
+    final messages = watch(chatMessagesProvider(scope)).valueOrNull ?? const <Message>[];
     return ChatUtils.getStatistics(messages);
   }
 
   /// Send a text message easily
-  Future<void> sendChatMessage(ChatRoomScope scope, String content) {
-    return read(chatMessagesProvider(scope).notifier).sendMessage(content);
+  Future<void> sendChatMessage(ChatRoomScope scope, String content) async {
+    final currentUser = read(currentUserProvider).valueOrNull;
+    if (currentUser == null) {
+      throw StateError('User not authenticated');
+    }
+
+    await read(chatMessageSendServiceProvider).sendTextMessage(
+      content: content,
+      channelId: scope.roomId,
+      senderId: currentUser.id ?? '',
+      senderUsername: currentUser.username,
+    );
+    await read(chatOutboxFlusherProvider(scope)).flushPendingIfConnected();
   }
 
   /// Send a reminder easily
@@ -179,26 +191,28 @@ extension ChatUtilsRef on WidgetRef {
     required DateTime dueDate,
     String priority = 'medium',
   }) {
-    return read(
-      chatMessagesProvider(scope).notifier,
-    ).sendReminder(content, dueDate: dueDate, priority: priority);
+    return read(chatWebSocketServiceProvider(scope)).sendReminder(
+      content,
+      dueDate: dueDate,
+      priority: priority,
+    );
   }
 
   /// Get all overdue reminders
   List<Message> getOverdueReminders(ChatRoomScope scope) {
-    final messages = watch(chatMessagesProvider(scope));
+    final messages = watch(chatMessagesProvider(scope)).valueOrNull ?? const <Message>[];
     return ChatUtils.getOverdueReminders(messages);
   }
 
   /// Get upcoming reminders
   List<Message> getUpcomingReminders(ChatRoomScope scope, {int daysAhead = 7}) {
-    final messages = watch(chatMessagesProvider(scope));
+    final messages = watch(chatMessagesProvider(scope)).valueOrNull ?? const <Message>[];
     return ChatUtils.getUpcomingReminders(messages, daysAhead: daysAhead);
   }
 
   /// Get conversation metrics
   ConversationMetrics getMetrics(ChatRoomScope scope) {
-    final messages = watch(chatMessagesProvider(scope));
+    final messages = watch(chatMessagesProvider(scope)).valueOrNull ?? const <Message>[];
     return ChatUtils.getConversationMetrics(messages);
   }
 }
